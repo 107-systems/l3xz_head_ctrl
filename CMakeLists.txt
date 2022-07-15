@@ -29,8 +29,6 @@ add_executable(${L3XZ_HEAD_CTRL_TARGET}
 #######################################################################################
 target_compile_features(${L3XZ_HEAD_CTRL_TARGET} PRIVATE cxx_std_17)
 #######################################################################################
-target_link_libraries(${L3XZ_HEAD_CTRL_TARGET} orocos-kdl)
-#######################################################################################
 ament_target_dependencies(${L3XZ_HEAD_CTRL_TARGET} rclcpp geometry_msgs)
 #######################################################################################
 rosidl_generate_interfaces(${PROJECT_NAME}
