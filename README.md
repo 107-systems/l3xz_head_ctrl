@@ -3,7 +3,7 @@
 ==============================
 [![Spell Check status](https://github.com/107-systems/l3xz_head_ctrl/actions/workflows/spell-check.yml/badge.svg)](https://github.com/107-systems/l3xz_head_ctrl/actions/workflows/spell-check.yml)
 
-Head controller for the L3XZ electric/hydraulic hexapod robot.
+Head controller for the L3X-Z electric/hydraulic hexapod robot.
 
 #### How-to-build
 ```bash
