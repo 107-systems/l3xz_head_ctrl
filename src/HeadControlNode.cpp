@@ -62,8 +62,8 @@ void HeadControlNode::updateHeadControllerInput(l3xz_head_ctrl::msg::HeadAngle::
 
 void HeadControlNode::updateHeadControllerInput(geometry_msgs::msg::Twist::SharedPtr const msg)
 {
-  _head_ctrl_input.set_pan_angular_velocity (msg->angular.y);
-  _head_ctrl_input.set_tilt_angular_velocity(msg->angular.z);
+  _head_ctrl_input.set_pan_angular_velocity (msg->angular.z);
+  _head_ctrl_input.set_tilt_angular_velocity(msg->angular.y);
 }
 
 /**************************************************************************************
