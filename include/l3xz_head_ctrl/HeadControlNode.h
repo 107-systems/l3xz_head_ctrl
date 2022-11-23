@@ -44,6 +44,7 @@ private:
   head::Controller _head_ctrl;
   head::ControllerInput _head_ctrl_input;
   head::ControllerOutput _head_ctrl_output;
+  dynamixelplusplus::Dynamixel::Id _pan_servo_id, _tilt_servo_id;
 
   rclcpp::Subscription<geometry_msgs::msg::Twist>::SharedPtr _head_sub;
   rclcpp::Publisher<l3xz_head_ctrl::msg::HeadAngle>::SharedPtr _head_angle_pub;
@@ -54,6 +55,10 @@ private:
 
   void updateHeadControllerInput(l3xz_head_ctrl::msg::HeadAngle::SharedPtr const msg);
   void updateHeadControllerInput(geometry_msgs::msg::Twist::SharedPtr const msg);
+
+  static int                              constexpr DEFAULT_SERIAL_BAUDRATE = 115200;
+  static dynamixelplusplus::Dynamixel::Id constexpr DEFAULT_PAN_SERVO_ID    = 7;
+  static dynamixelplusplus::Dynamixel::Id constexpr DEFAULT_TILT_SERVO_ID   = 8;
 };
 
 /**************************************************************************************

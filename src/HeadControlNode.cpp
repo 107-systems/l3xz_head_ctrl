@@ -26,11 +26,15 @@ HeadControlNode::HeadControlNode()
 , _head_ctrl{}
 , _head_ctrl_input{}
 , _head_ctrl_output{}
+, _pan_servo_id{DEFAULT_PAN_SERVO_ID}
+, _tilt_servo_id{DEFAULT_TILT_SERVO_ID}
 {
   /* Configure the Dynamixel MX-28AR servos of the pan/tilt head. */
 
   declare_parameter("serial_port", "/dev/ttyUSB0");
-  declare_parameter("serial_port_baudrate", 115200);
+  declare_parameter("serial_port_baudrate", DEFAULT_SERIAL_BAUDRATE);
+  declare_parameter("pan_servo_id", DEFAULT_PAN_SERVO_ID);
+  declare_parameter("tilt_servo_id", DEFAULT_TILT_SERVO_ID);
 
   std::string const serial_port  = get_parameter("serial_port").as_string();
   int const serial_port_baudrate = get_parameter("serial_port_baudrate").as_int();
@@ -48,6 +52,19 @@ HeadControlNode::HeadControlNode()
   for (auto id : dyn_id_vect)
     dyn_id_list << static_cast<int>(id) << " ";
   RCLCPP_INFO(get_logger(), "detected Dynamixel MX-28: { %s}", dyn_id_list.str().c_str());
+
+  _pan_servo_id  = static_cast<dynamixelplusplus::Dynamixel::Id>(get_parameter("pan_servo_id").as_int());
+  _tilt_servo_id = static_cast<dynamixelplusplus::Dynamixel::Id>(get_parameter("tilt_servo_id").as_int());
+
+  if (std::none_of(std::cbegin(dyn_id_vect), std::cend(dyn_id_vect), [this](dynamixelplusplus::Dynamixel::Id const id) { return (id == _pan_servo_id); })) {
+    RCLCPP_ERROR(get_logger(), "pan servo with configured id %d not online", static_cast<int>(_pan_servo_id));
+    rclcpp::shutdown();
+  }
+
+  if (std::none_of(std::cbegin(dyn_id_vect), std::cend(dyn_id_vect), [this](dynamixelplusplus::Dynamixel::Id const id) { return (id == _tilt_servo_id); })) {
+    RCLCPP_ERROR(get_logger(), "tilt servo with configured id %d not online", static_cast<int>(_tilt_servo_id));
+    rclcpp::shutdown();
+  }
 
   /* Configure subscribers and publishers. */
 
