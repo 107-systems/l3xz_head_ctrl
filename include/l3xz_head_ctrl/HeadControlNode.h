@@ -11,6 +11,8 @@
  * INCLUDE
  **************************************************************************************/
 
+#include <memory>
+
 #include <rclcpp/rclcpp.hpp>
 
 #include <geometry_msgs/msg/twist.hpp>
@@ -18,6 +20,8 @@
 #include <l3xz_head_ctrl/msg/head_angle.hpp>
 
 #include <l3xz_head_ctrl/head/HeadController.h>
+
+#include <dynamixel++/Dynamixel++.h>
 
 /**************************************************************************************
  * NAMESPACE
@@ -36,6 +40,7 @@ public:
   HeadControlNode();
 
 private:
+  std::unique_ptr<dynamixelplusplus::Dynamixel> _dyn_ctrl;
   head::Controller _head_ctrl;
   head::ControllerInput _head_ctrl_input;
   head::ControllerOutput _head_ctrl_output;

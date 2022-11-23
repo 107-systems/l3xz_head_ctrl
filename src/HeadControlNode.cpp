@@ -27,6 +27,30 @@ HeadControlNode::HeadControlNode()
 , _head_ctrl_input{}
 , _head_ctrl_output{}
 {
+  /* Configure the Dynamixel MX-28AR servos of the pan/tilt head. */
+
+  declare_parameter("serial_port", "/dev/ttyUSB0");
+  declare_parameter("serial_port_baudrate", 115200);
+
+  std::string const serial_port  = get_parameter("serial_port").as_string();
+  int const serial_port_baudrate = get_parameter("serial_port_baudrate").as_int();
+
+  _dyn_ctrl.reset(new dynamixelplusplus::Dynamixel(serial_port, dynamixelplusplus::Dynamixel::Protocol::V2_0, serial_port_baudrate));
+
+  /* Determine which/if any servos can be reached via the connected network. */
+  auto [err_ping, dyn_id_vect] = _dyn_ctrl->broadcastPing();
+  if (err_ping != dynamixelplusplus::Dynamixel::Error::None) {
+    RCLCPP_ERROR(get_logger(), "'broadcastPing' failed with error code %d", static_cast<int>(err_ping));
+    rclcpp::shutdown();
+  }
+
+  std::stringstream dyn_id_list;
+  for (auto id : dyn_id_vect)
+    dyn_id_list << static_cast<int>(id) << " ";
+  RCLCPP_INFO(get_logger(), "detected Dynamixel MX-28: { %s}", dyn_id_list.str().c_str());
+
+  /* Configure subscribers and publishers. */
+
   _head_sub = create_subscription<geometry_msgs::msg::Twist>
     ("/l3xz/cmd_vel_head", 10, [this](geometry_msgs::msg::Twist::SharedPtr const msg) { updateHeadControllerInput(msg);});
 
@@ -35,6 +59,8 @@ HeadControlNode::HeadControlNode()
 
   _head_angle_sub = create_subscription<l3xz_head_ctrl::msg::HeadAngle>
     ("/l3xz/ctrl/head/angle/actual", 10, [this](l3xz_head_ctrl::msg::HeadAngle::SharedPtr const msg) { updateHeadControllerInput(msg); });
+
+  /* Configure periodic control loop function. */
 
   _ctrl_loop_timer = create_wall_timer
     (std::chrono::milliseconds(50), [this]() { this->onCtrlLoopTimerEvent(); });
