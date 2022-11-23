@@ -17,8 +17,6 @@
 
 #include <geometry_msgs/msg/twist.hpp>
 
-#include <l3xz_head_ctrl/msg/head_angle.hpp>
-
 #include <l3xz_head_ctrl/head/HeadController.h>
 
 #include <dynamixel++/Dynamixel++.h>
@@ -47,13 +45,10 @@ private:
   dynamixelplusplus::Dynamixel::Id _pan_servo_id, _tilt_servo_id;
 
   rclcpp::Subscription<geometry_msgs::msg::Twist>::SharedPtr _head_sub;
-  rclcpp::Publisher<l3xz_head_ctrl::msg::HeadAngle>::SharedPtr _head_angle_pub;
-  rclcpp::Subscription<l3xz_head_ctrl::msg::HeadAngle>::SharedPtr _head_angle_sub;
   rclcpp::TimerBase::SharedPtr _ctrl_loop_timer;
 
   void onCtrlLoopTimerEvent();
 
-  void updateHeadControllerInput(l3xz_head_ctrl::msg::HeadAngle::SharedPtr const msg);
   void updateHeadControllerInput(geometry_msgs::msg::Twist::SharedPtr const msg);
 
   static int                              constexpr DEFAULT_SERIAL_BAUDRATE = 115200;

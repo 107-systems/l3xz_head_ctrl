@@ -7,7 +7,6 @@ set(L3XZ_HEAD_CTRL_TARGET ${PROJECT_NAME}_node)
 find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(geometry_msgs REQUIRED)
-find_package(rosidl_default_generators REQUIRED)
 #######################################################################################
 add_subdirectory(external/libdynamixelplusplus)
 #######################################################################################
@@ -34,12 +33,6 @@ target_compile_features(${L3XZ_HEAD_CTRL_TARGET} PRIVATE cxx_std_17)
 target_link_libraries(${L3XZ_HEAD_CTRL_TARGET} dynamixel++)
 #######################################################################################
 ament_target_dependencies(${L3XZ_HEAD_CTRL_TARGET} rclcpp geometry_msgs)
-#######################################################################################
-rosidl_generate_interfaces(${PROJECT_NAME}
-  "msg/HeadAngle.msg"
-)
-#######################################################################################
-rosidl_target_interfaces(${L3XZ_HEAD_CTRL_TARGET} ${PROJECT_NAME} "rosidl_typesupport_cpp")
 #######################################################################################
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)

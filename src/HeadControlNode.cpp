@@ -69,13 +69,12 @@ HeadControlNode::HeadControlNode()
   /* Configure subscribers and publishers. */
 
   _head_sub = create_subscription<geometry_msgs::msg::Twist>
-    ("/l3xz/cmd_vel_head", 10, [this](geometry_msgs::msg::Twist::SharedPtr const msg) { updateHeadControllerInput(msg);});
-
-  _head_angle_pub = create_publisher<l3xz_head_ctrl::msg::HeadAngle>
-    ("/l3xz/ctrl/head/angle/target", 10);
-
-  _head_angle_sub = create_subscription<l3xz_head_ctrl::msg::HeadAngle>
-    ("/l3xz/ctrl/head/angle/actual", 10, [this](l3xz_head_ctrl::msg::HeadAngle::SharedPtr const msg) { updateHeadControllerInput(msg); });
+    ("/l3xz/cmd_vel_head", 10,
+    [this](geometry_msgs::msg::Twist::SharedPtr const msg)
+    {
+      _head_ctrl_input.set_pan_angular_velocity (msg->angular.z);
+      _head_ctrl_input.set_tilt_angular_velocity(msg->angular.y);
+    });
 
   /* Configure periodic control loop function. */
 
@@ -90,23 +89,6 @@ HeadControlNode::HeadControlNode()
 void HeadControlNode::onCtrlLoopTimerEvent()
 {
   _head_ctrl_output = _head_ctrl.update(_head_ctrl_input, _head_ctrl_output);
-
-  l3xz_head_ctrl::msg::HeadAngle head_msg;
-  head_msg.pan_angle_deg  = _head_ctrl_output.pan_angle ();
-  head_msg.tilt_angle_deg = _head_ctrl_output.tilt_angle();
-  _head_angle_pub->publish(head_msg);
-}
-
-void HeadControlNode::updateHeadControllerInput(l3xz_head_ctrl::msg::HeadAngle::SharedPtr msg)
-{
-  _head_ctrl_input.set_pan_angle (msg->pan_angle_deg);
-  _head_ctrl_input.set_tilt_angle(msg->tilt_angle_deg);
-}
-
-void HeadControlNode::updateHeadControllerInput(geometry_msgs::msg::Twist::SharedPtr const msg)
-{
-  _head_ctrl_input.set_pan_angular_velocity (msg->angular.z);
-  _head_ctrl_input.set_tilt_angular_velocity(msg->angular.y);
 }
 
 /**************************************************************************************
