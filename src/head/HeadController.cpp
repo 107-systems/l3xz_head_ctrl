@@ -10,7 +10,7 @@
 
 #include <l3xz_head_ctrl/head/HeadController.h>
 
-#include <l3xz_head_ctrl/head/state/Init.h>
+#include <l3xz_head_ctrl/head/state/Teleop.h>
 
 /**************************************************************************************
  * NAMESPACE
@@ -24,7 +24,7 @@ namespace l3xz::head
  **************************************************************************************/
 
 Controller::Controller()
-: _head_state{new state::Init()}
+: _head_state{new state::Teleop()}
 {
   _head_state->onEnter();
 }

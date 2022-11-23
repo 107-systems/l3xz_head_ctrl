@@ -15,7 +15,6 @@ include_directories(${L3XZ_HEAD_CTRL_TARGET}
 )
 #######################################################################################
 add_executable(${L3XZ_HEAD_CTRL_TARGET}
-  src/head/state/Init.cpp
   src/head/state/Teleop.cpp
   src/head/HeadController.cpp
 
