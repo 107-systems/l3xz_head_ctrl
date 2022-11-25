@@ -1,7 +1,7 @@
 /**
  * Copyright (c) 2022 LXRobotics GmbH.
  * Author: Alexander Entinger <alexander.entinger@lxrobotics.com>
- * Contributors: https://github.com/107-systems/l3xz_ctrl/graphs/contributors.
+ * Contributors: https://github.com/107-systems/l3xz_head_ctrl/graphs/contributors.
  */
 
 #ifndef L3XZ_HEAD_CTRL_NODE_H_
