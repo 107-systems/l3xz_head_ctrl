@@ -24,7 +24,7 @@ namespace l3xz::mx28ar
  * TYPEDEF
  **************************************************************************************/
 
-enum class ControlTable : uint8_t
+enum class ControlTable : uint16_t
 {
   OperatingMode = 11,
 };

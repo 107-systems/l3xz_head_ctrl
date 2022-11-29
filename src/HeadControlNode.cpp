@@ -70,6 +70,13 @@ HeadControlNode::HeadControlNode()
   /* Instantiate MX-28AR controller and continue with pan/tilt head initialization. */
   _mx28_ctrl.reset(new mx28ar::MX28AR_Control(std::move(dyn_ctrl)));
 
+  dynamixelplusplus::Dynamixel::IdVect const pan_tilt_id_vect{_pan_servo_id, _tilt_servo_id};
+
+  if (!_mx28_ctrl->setOperatingMode(pan_tilt_id_vect, mx28ar::OperatingMode::PositionControlMode)) {
+    RCLCPP_ERROR(get_logger(), "could not configure pan/tilt servos for position control mode");
+    rclcpp::shutdown();
+  }
+
   /* Configure subscribers and publishers. */
 
   _head_sub = create_subscription<geometry_msgs::msg::Twist>
