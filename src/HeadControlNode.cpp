@@ -72,6 +72,11 @@ HeadControlNode::HeadControlNode()
 
   dynamixelplusplus::Dynamixel::IdVect const pan_tilt_id_vect{_pan_servo_id, _tilt_servo_id};
 
+  if (!_mx28_ctrl->setTorqueEnable(pan_tilt_id_vect, mx28ar::TorqueEnable::Off)) {
+    RCLCPP_ERROR(get_logger(), "could not disable torque for pan/tilt servos");
+    rclcpp::shutdown();
+  }
+
   if (!_mx28_ctrl->setOperatingMode(pan_tilt_id_vect, mx28ar::OperatingMode::PositionControlMode)) {
     RCLCPP_ERROR(get_logger(), "could not configure pan/tilt servos for position control mode");
     rclcpp::shutdown();

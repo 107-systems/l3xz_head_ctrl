@@ -33,6 +33,7 @@ class MX28AR_Control
 public:
   MX28AR_Control(std::unique_ptr<dynamixelplusplus::Dynamixel> && dyn_ctrl);
 
+  bool setTorqueEnable(dynamixelplusplus::Dynamixel::IdVect const & id_vect, TorqueEnable const torque_enable);
   bool setOperatingMode(dynamixelplusplus::Dynamixel::IdVect const & id_vect, OperatingMode const operating_mode);
 
 private:

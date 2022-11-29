@@ -33,6 +33,16 @@ MX28AR_Control::MX28AR_Control(std::unique_ptr<Dynamixel> && dyn_ctrl)
  * PUBLIC MEMBER FUNCTIONS
  **************************************************************************************/
 
+bool MX28AR_Control::setTorqueEnable(Dynamixel::IdVect const & id_vect, TorqueEnable const torque_enable)
+{
+  std::map<Dynamixel::Id, uint8_t> torque_enable_data_map;
+
+  for (auto id : id_vect)
+    torque_enable_data_map[id] = static_cast<uint8_t>(torque_enable);
+
+  return (_dyn_ctrl->syncWrite(static_cast<uint16_t>(ControlTable::TorqueEnable), torque_enable_data_map) == Dynamixel::Error::None);
+}
+
 bool MX28AR_Control::setOperatingMode(Dynamixel::IdVect const & id_vect, OperatingMode const operating_mode)
 {
   std::map<Dynamixel::Id, uint8_t> op_mode_data_map;
