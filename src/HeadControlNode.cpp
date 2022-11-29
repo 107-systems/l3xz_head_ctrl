@@ -17,6 +17,9 @@
 namespace l3xz
 {
 
+using namespace dynamixelplusplus;
+using namespace mx28ar;
+
 /**************************************************************************************
  * CTOR/DTOR
  **************************************************************************************/
@@ -40,11 +43,11 @@ HeadControlNode::HeadControlNode()
   std::string const serial_port  = get_parameter("serial_port").as_string();
   int const serial_port_baudrate = get_parameter("serial_port_baudrate").as_int();
 
-  std::unique_ptr<dynamixelplusplus::Dynamixel> dyn_ctrl(new dynamixelplusplus::Dynamixel(serial_port, dynamixelplusplus::Dynamixel::Protocol::V2_0, serial_port_baudrate));
+  std::unique_ptr<Dynamixel> dyn_ctrl(new Dynamixel(serial_port, Dynamixel::Protocol::V2_0, serial_port_baudrate));
 
   /* Determine which/if any servos can be reached via the connected network. */
   auto [err_ping, dyn_id_vect] = dyn_ctrl->broadcastPing();
-  if (err_ping != dynamixelplusplus::Dynamixel::Error::None) {
+  if (err_ping != Dynamixel::Error::None) {
     RCLCPP_ERROR(get_logger(), "'broadcastPing' failed with error code %d", static_cast<int>(err_ping));
     rclcpp::shutdown();
   }
@@ -54,30 +57,30 @@ HeadControlNode::HeadControlNode()
     dyn_id_list << static_cast<int>(id) << " ";
   RCLCPP_INFO(get_logger(), "detected Dynamixel MX-28: { %s}", dyn_id_list.str().c_str());
 
-  _pan_servo_id  = static_cast<dynamixelplusplus::Dynamixel::Id>(get_parameter("pan_servo_id").as_int());
-  _tilt_servo_id = static_cast<dynamixelplusplus::Dynamixel::Id>(get_parameter("tilt_servo_id").as_int());
+  _pan_servo_id  = static_cast<Dynamixel::Id>(get_parameter("pan_servo_id").as_int());
+  _tilt_servo_id = static_cast<Dynamixel::Id>(get_parameter("tilt_servo_id").as_int());
 
-  if (std::none_of(std::cbegin(dyn_id_vect), std::cend(dyn_id_vect), [this](dynamixelplusplus::Dynamixel::Id const id) { return (id == _pan_servo_id); })) {
+  if (std::none_of(std::cbegin(dyn_id_vect), std::cend(dyn_id_vect), [this](Dynamixel::Id const id) { return (id == _pan_servo_id); })) {
     RCLCPP_ERROR(get_logger(), "pan servo with configured id %d not online", static_cast<int>(_pan_servo_id));
     rclcpp::shutdown();
   }
 
-  if (std::none_of(std::cbegin(dyn_id_vect), std::cend(dyn_id_vect), [this](dynamixelplusplus::Dynamixel::Id const id) { return (id == _tilt_servo_id); })) {
+  if (std::none_of(std::cbegin(dyn_id_vect), std::cend(dyn_id_vect), [this](Dynamixel::Id const id) { return (id == _tilt_servo_id); })) {
     RCLCPP_ERROR(get_logger(), "tilt servo with configured id %d not online", static_cast<int>(_tilt_servo_id));
     rclcpp::shutdown();
   }
 
   /* Instantiate MX-28AR controller and continue with pan/tilt head initialization. */
-  _mx28_ctrl.reset(new mx28ar::MX28AR_Control(std::move(dyn_ctrl)));
+  _mx28_ctrl.reset(new MX28AR_Control(std::move(dyn_ctrl)));
 
-  dynamixelplusplus::Dynamixel::IdVect const pan_tilt_id_vect{_pan_servo_id, _tilt_servo_id};
+  Dynamixel::IdVect const pan_tilt_id_vect{_pan_servo_id, _tilt_servo_id};
 
-  if (!_mx28_ctrl->setTorqueEnable(pan_tilt_id_vect, mx28ar::TorqueEnable::Off)) {
+  if (!_mx28_ctrl->setTorqueEnable(pan_tilt_id_vect, TorqueEnable::Off)) {
     RCLCPP_ERROR(get_logger(), "could not disable torque for pan/tilt servos");
     rclcpp::shutdown();
   }
 
-  if (!_mx28_ctrl->setOperatingMode(pan_tilt_id_vect, mx28ar::OperatingMode::PositionControlMode)) {
+  if (!_mx28_ctrl->setOperatingMode(pan_tilt_id_vect, OperatingMode::PositionControlMode)) {
     RCLCPP_ERROR(get_logger(), "could not configure pan/tilt servos for position control mode");
     rclcpp::shutdown();
   }
