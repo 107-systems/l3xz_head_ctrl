@@ -23,6 +23,7 @@ namespace l3xz
 
 HeadControlNode::HeadControlNode()
 : rclcpp::Node("l3xz_head_ctrl")
+, _mx28_ctrl{}
 , _head_ctrl{}
 , _head_ctrl_input{}
 , _head_ctrl_output{}
@@ -65,6 +66,9 @@ HeadControlNode::HeadControlNode()
     RCLCPP_ERROR(get_logger(), "tilt servo with configured id %d not online", static_cast<int>(_tilt_servo_id));
     rclcpp::shutdown();
   }
+
+  /* Instantiate MX-28AR controller and continue with pan/tilt head initialization. */
+  _mx28_ctrl.reset(new mx28ar::MX28AR_Control(std::move(_dyn_ctrl)));
 
   /* Configure subscribers and publishers. */
 
