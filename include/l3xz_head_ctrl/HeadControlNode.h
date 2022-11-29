@@ -50,9 +50,11 @@ private:
 
   void updateHeadControllerInput(geometry_msgs::msg::Twist::SharedPtr const msg);
 
-  static int                              constexpr DEFAULT_SERIAL_BAUDRATE = 115200;
-  static dynamixelplusplus::Dynamixel::Id constexpr DEFAULT_PAN_SERVO_ID    = 7;
-  static dynamixelplusplus::Dynamixel::Id constexpr DEFAULT_TILT_SERVO_ID   = 8;
+  static int                              constexpr DEFAULT_SERIAL_BAUDRATE          = 115200;
+  static dynamixelplusplus::Dynamixel::Id constexpr DEFAULT_PAN_SERVO_ID             = 7;
+  static dynamixelplusplus::Dynamixel::Id constexpr DEFAULT_TILT_SERVO_ID            = 8;
+  static float                            constexpr DEFAULT_PAN_SERVO_INITIAL_ANGLE  = 180.0f;
+  static float                            constexpr DEFAULT_TILT_SERVO_INITIAL_ANGLE = 180.0f;
 };
 
 /**************************************************************************************

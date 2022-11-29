@@ -13,7 +13,9 @@ def generate_launch_description():
           {'serial_port' : '"/dev/serial/by-id/usb-FTDI_USB__-__Serial_Converter_FT4NNZ55-if00-port0"'},
           {'serial_port_baudrate': 115200},
           {'pan_servo_id': 7},
-          {'tilt_servo_id': 8}
+          {'tilt_servo_id': 8},
+          {'pan_servo_initial_angle': 180.0},
+          {'tilt_servo_initial_angle': 180.0}
       ]
     )
   ])
