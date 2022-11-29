@@ -20,8 +20,6 @@
 #include <l3xz_head_ctrl/head/HeadController.h>
 #include <l3xz_head_ctrl/MX28AR/MX28AR_Control.h>
 
-#include <dynamixel++/Dynamixel++.h>
-
 /**************************************************************************************
  * NAMESPACE
  **************************************************************************************/
@@ -39,7 +37,6 @@ public:
   HeadControlNode();
 
 private:
-  std::unique_ptr<dynamixelplusplus::Dynamixel> _dyn_ctrl;
   std::unique_ptr<mx28ar::MX28AR_Control> _mx28_ctrl;
   head::Controller _head_ctrl;
   head::ControllerInput _head_ctrl_input;

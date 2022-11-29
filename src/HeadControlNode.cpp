@@ -40,10 +40,10 @@ HeadControlNode::HeadControlNode()
   std::string const serial_port  = get_parameter("serial_port").as_string();
   int const serial_port_baudrate = get_parameter("serial_port_baudrate").as_int();
 
-  _dyn_ctrl.reset(new dynamixelplusplus::Dynamixel(serial_port, dynamixelplusplus::Dynamixel::Protocol::V2_0, serial_port_baudrate));
+  std::unique_ptr<dynamixelplusplus::Dynamixel> dyn_ctrl(new dynamixelplusplus::Dynamixel(serial_port, dynamixelplusplus::Dynamixel::Protocol::V2_0, serial_port_baudrate));
 
   /* Determine which/if any servos can be reached via the connected network. */
-  auto [err_ping, dyn_id_vect] = _dyn_ctrl->broadcastPing();
+  auto [err_ping, dyn_id_vect] = dyn_ctrl->broadcastPing();
   if (err_ping != dynamixelplusplus::Dynamixel::Error::None) {
     RCLCPP_ERROR(get_logger(), "'broadcastPing' failed with error code %d", static_cast<int>(err_ping));
     rclcpp::shutdown();
@@ -68,7 +68,7 @@ HeadControlNode::HeadControlNode()
   }
 
   /* Instantiate MX-28AR controller and continue with pan/tilt head initialization. */
-  _mx28_ctrl.reset(new mx28ar::MX28AR_Control(std::move(_dyn_ctrl)));
+  _mx28_ctrl.reset(new mx28ar::MX28AR_Control(std::move(dyn_ctrl)));
 
   /* Configure subscribers and publishers. */
 
