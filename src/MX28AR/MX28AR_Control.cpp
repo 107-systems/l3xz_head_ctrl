@@ -68,6 +68,18 @@ bool MX28AR_Control::setGoalPosition(std::map<Dynamixel::Id, float> const & id_a
   return (_dyn_ctrl->syncWrite(static_cast<uint16_t>(ControlTable::GoalPosition), goal_position_data_map) == Dynamixel::Error::None);
 }
 
+bool MX28AR_Control::getPresentPosition(Dynamixel::IdVect const & id_vect, std::map<Dynamixel::Id, float> & id_angle_map)
+{
+  std::map<Dynamixel::Id, uint32_t> id_angle_raw_map;
+  if (_dyn_ctrl->syncRead(static_cast<uint16_t>(ControlTable::PresentPosition), id_vect, id_angle_raw_map) != Dynamixel::Error::None)
+    return false;
+
+  for (auto [id, angle_raw] : id_angle_raw_map)
+    id_angle_map[id] = static_cast<float>(angle_raw) * 360.0f / 4096.0f;
+
+  return true;
+}
+
 /**************************************************************************************
  * NAMESPACE
  **************************************************************************************/

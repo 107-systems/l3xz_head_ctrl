@@ -26,9 +26,10 @@ namespace l3xz::mx28ar
 
 enum class ControlTable : uint16_t
 {
-  OperatingMode =  11,
-  TorqueEnable  =  64,
-  GoalPosition  = 116,
+  OperatingMode   =  11,
+  TorqueEnable    =  64,
+  GoalPosition    = 116,
+  PresentPosition = 132,
 };
 
 enum class OperatingMode : uint8_t

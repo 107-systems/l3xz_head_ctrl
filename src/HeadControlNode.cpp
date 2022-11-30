@@ -59,18 +59,18 @@ HeadControlNode::HeadControlNode()
   std::stringstream dyn_id_list;
   for (auto id : dyn_id_vect)
     dyn_id_list << static_cast<int>(id) << " ";
-  RCLCPP_INFO(get_logger(), "detected Dynamixel MX-28AR: { %s}", dyn_id_list.str().c_str());
+  RCLCPP_INFO(get_logger(), "detected Dynamixel MX-28AR: { %s}.", dyn_id_list.str().c_str());
 
   _pan_servo_id  = static_cast<Dynamixel::Id>(get_parameter("pan_servo_id").as_int());
   _tilt_servo_id = static_cast<Dynamixel::Id>(get_parameter("tilt_servo_id").as_int());
 
   if (std::none_of(std::cbegin(dyn_id_vect), std::cend(dyn_id_vect), [this](Dynamixel::Id const id) { return (id == _pan_servo_id); })) {
-    RCLCPP_ERROR(get_logger(), "pan servo with configured id %d not online", static_cast<int>(_pan_servo_id));
+    RCLCPP_ERROR(get_logger(), "pan servo with configured id %d not online.", static_cast<int>(_pan_servo_id));
     rclcpp::shutdown();
   }
 
   if (std::none_of(std::cbegin(dyn_id_vect), std::cend(dyn_id_vect), [this](Dynamixel::Id const id) { return (id == _tilt_servo_id); })) {
-    RCLCPP_ERROR(get_logger(), "tilt servo with configured id %d not online", static_cast<int>(_tilt_servo_id));
+    RCLCPP_ERROR(get_logger(), "tilt servo with configured id %d not online.", static_cast<int>(_tilt_servo_id));
     rclcpp::shutdown();
   }
 
@@ -80,17 +80,17 @@ HeadControlNode::HeadControlNode()
   Dynamixel::IdVect const pan_tilt_id_vect{_pan_servo_id, _tilt_servo_id};
 
   if (!_mx28_ctrl->setTorqueEnable(pan_tilt_id_vect, TorqueEnable::Off)) {
-    RCLCPP_ERROR(get_logger(), "could not disable torque for pan/tilt servos");
+    RCLCPP_ERROR(get_logger(), "could not disable torque for pan/tilt servos.");
     rclcpp::shutdown();
   }
 
   if (!_mx28_ctrl->setOperatingMode(pan_tilt_id_vect, OperatingMode::PositionControlMode)) {
-    RCLCPP_ERROR(get_logger(), "could not configure pan/tilt servos for position control mode");
+    RCLCPP_ERROR(get_logger(), "could not configure pan/tilt servos for position control mode.");
     rclcpp::shutdown();
   }
 
   if (!_mx28_ctrl->setTorqueEnable(pan_tilt_id_vect, TorqueEnable::On)) {
-    RCLCPP_ERROR(get_logger(), "could not enable torque for pan/tilt servos");
+    RCLCPP_ERROR(get_logger(), "could not enable torque for pan/tilt servos.");
     rclcpp::shutdown();
   }
 
@@ -101,9 +101,41 @@ HeadControlNode::HeadControlNode()
   };
   if (!_mx28_ctrl->setGoalPosition(INITIAL_HEAD_POSITION_deg)) {
     RCLCPP_ERROR(get_logger(),
-                 "could not set initial position for pan (%0.2f) / tilt (%0.2f) servo",
+                 "could not set initial position for pan (%0.2f) / tilt (%0.2f) servo.",
                  INITIAL_HEAD_POSITION_deg.at(_pan_servo_id),
                  INITIAL_HEAD_POSITION_deg.at(_tilt_servo_id));
+    rclcpp::shutdown();
+  }
+
+  std::map<Dynamixel::Id, float> actual_head_position_deg;
+  if (!_mx28_ctrl->getPresentPosition(pan_tilt_id_vect, actual_head_position_deg)) {
+    RCLCPP_ERROR(get_logger(), "could not read current position for pan/tilt servo.");
+    rclcpp::shutdown();
+  }
+  if (!actual_head_position_deg.count(_pan_servo_id)) {
+    RCLCPP_ERROR(get_logger(), "could no position data for pan servo.");
+    rclcpp::shutdown();
+  }
+  if (!actual_head_position_deg.count(_tilt_servo_id)) {
+    RCLCPP_ERROR(get_logger(), "could no position data for tilt servo.");
+    rclcpp::shutdown();
+  }
+
+  static float constexpr INITIAL_ANGLE_EPSILON_deg = 2.0f;
+
+  if (fabs(actual_head_position_deg.at(_pan_servo_id) - INITIAL_HEAD_POSITION_deg.at(_pan_servo_id)) > INITIAL_ANGLE_EPSILON_deg) {
+    RCLCPP_ERROR(get_logger(),
+                 "could not reach initial position for pan servo, target: %0.2f, actual: %0.2f.",
+                 INITIAL_HEAD_POSITION_deg.at(_pan_servo_id),
+                 actual_head_position_deg.at(_pan_servo_id));
+    rclcpp::shutdown();
+  }
+
+  if (fabs(actual_head_position_deg.at(_tilt_servo_id) - INITIAL_HEAD_POSITION_deg.at(_tilt_servo_id)) > INITIAL_ANGLE_EPSILON_deg) {
+    RCLCPP_ERROR(get_logger(),
+                 "could not reach initial position for tilt servo, target: %0.2f, actual: %0.2f.",
+                 INITIAL_HEAD_POSITION_deg.at(_tilt_servo_id),
+                 actual_head_position_deg.at(_tilt_servo_id));
     rclcpp::shutdown();
   }
 

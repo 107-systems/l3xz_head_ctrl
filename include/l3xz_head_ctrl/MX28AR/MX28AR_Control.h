@@ -37,6 +37,7 @@ public:
   bool setTorqueEnable(dynamixelplusplus::Dynamixel::IdVect const & id_vect, TorqueEnable const torque_enable);
   bool setOperatingMode(dynamixelplusplus::Dynamixel::IdVect const & id_vect, OperatingMode const operating_mode);
   bool setGoalPosition(std::map<dynamixelplusplus::Dynamixel::Id, float> const & id_angle_map);
+  bool getPresentPosition(dynamixelplusplus::Dynamixel::IdVect const & id_vect, std::map<dynamixelplusplus::Dynamixel::Id, float> & id_angle_map);
 
 private:
   std::unique_ptr<dynamixelplusplus::Dynamixel> _dyn_ctrl;
