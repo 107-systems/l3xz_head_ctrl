@@ -159,7 +159,7 @@ HeadControlNode::HeadControlNode()
   _ctrl_loop_timer = create_wall_timer
     (std::chrono::milliseconds(50), [this]() { this->onCtrlLoopTimerEvent(); });
 
-  RCLCPP_INFO(get_logger(), "node initialisation complete.");
+  RCLCPP_INFO(get_logger(), "node initialization complete.");
 }
 
 /**************************************************************************************
