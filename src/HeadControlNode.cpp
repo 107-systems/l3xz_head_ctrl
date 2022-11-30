@@ -45,6 +45,8 @@ HeadControlNode::HeadControlNode()
   std::string const serial_port  = get_parameter("serial_port").as_string();
   int const serial_port_baudrate = get_parameter("serial_port_baudrate").as_int();
 
+  RCLCPP_INFO(get_logger(), "configuring Dynamixel RS485 bus:\n\tDevice:   %s\n\tBaudrate: %d", serial_port.c_str(), serial_port_baudrate);
+
   std::unique_ptr<Dynamixel> dyn_ctrl(new Dynamixel(serial_port, Dynamixel::Protocol::V2_0, serial_port_baudrate));
 
   /* Determine which/if any servos can be reached via the connected network. */
