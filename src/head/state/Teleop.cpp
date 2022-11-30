@@ -21,12 +21,12 @@ namespace l3xz::head::state
  * PUBLIC MEMBER FUNCTIONS
  **************************************************************************************/
 
-void Teleop::onEnter()
+void Teleop::onEnter(mx28ar::MX28AR_Control & /* mx28_ctrl */)
 {
 
 }
 
-void Teleop::onExit()
+void Teleop::onExit(mx28ar::MX28AR_Control & /* mx28_ctrl */)
 {
 
 }

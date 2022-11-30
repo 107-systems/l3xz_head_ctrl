@@ -27,7 +27,7 @@ Controller::Controller(std::unique_ptr<mx28ar::MX28AR_Control> && mx28_ctrl)
 : _mx28_ctrl{std::move(mx28_ctrl)}
 , _head_state{new state::Teleop()}
 {
-  _head_state->onEnter();
+  _head_state->onEnter(*_mx28_ctrl);
 }
 
 Controller::~Controller()
@@ -45,12 +45,12 @@ void Controller::update(float const pan_angular_velocity, float const tilt_angul
     
   if (next_head_state != _head_state)
   {
-    _head_state->onExit();
+    _head_state->onExit(*_mx28_ctrl);
 
     delete _head_state;
     _head_state = next_head_state;
     
-    _head_state->onEnter();
+    _head_state->onEnter(*_mx28_ctrl);
   }
 }
 
