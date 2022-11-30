@@ -89,6 +89,11 @@ HeadControlNode::HeadControlNode()
     rclcpp::shutdown();
   }
 
+  if (!_mx28_ctrl->setTorqueEnable(pan_tilt_id_vect, TorqueEnable::On)) {
+    RCLCPP_ERROR(get_logger(), "could not enable torque for pan/tilt servos");
+    rclcpp::shutdown();
+  }
+
   std::map<Dynamixel::Id, float> const INITIAL_HEAD_POSITION_deg =
   {
     {_pan_servo_id, get_parameter("pan_servo_initial_angle").as_double()},
@@ -99,11 +104,6 @@ HeadControlNode::HeadControlNode()
                  "could not set initial position for pan (%0.2f) / tilt (%0.2f) servo",
                  INITIAL_HEAD_POSITION_deg.at(_pan_servo_id),
                  INITIAL_HEAD_POSITION_deg.at(_tilt_servo_id));
-    rclcpp::shutdown();
-  }
-
-  if (!_mx28_ctrl->setTorqueEnable(pan_tilt_id_vect, TorqueEnable::On)) {
-    RCLCPP_ERROR(get_logger(), "could not enable torque for pan/tilt servos");
     rclcpp::shutdown();
   }
 
