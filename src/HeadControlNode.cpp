@@ -121,8 +121,9 @@ HeadControlNode::HeadControlNode()
     rclcpp::shutdown();
   }
 
-  static float constexpr INITIAL_ANGLE_EPSILON_deg = 2.0f;
+  std::this_thread::sleep_for(std::chrono::seconds(1));
 
+  static float constexpr INITIAL_ANGLE_EPSILON_deg = 2.0f;
   if (fabs(actual_head_position_deg.at(_pan_servo_id) - INITIAL_HEAD_POSITION_deg.at(_pan_servo_id)) > INITIAL_ANGLE_EPSILON_deg) {
     RCLCPP_ERROR(get_logger(),
                  "could not reach initial position for pan servo, target: %0.2f, actual: %0.2f.",
@@ -130,7 +131,6 @@ HeadControlNode::HeadControlNode()
                  actual_head_position_deg.at(_pan_servo_id));
     rclcpp::shutdown();
   }
-
   if (fabs(actual_head_position_deg.at(_tilt_servo_id) - INITIAL_HEAD_POSITION_deg.at(_tilt_servo_id)) > INITIAL_ANGLE_EPSILON_deg) {
     RCLCPP_ERROR(get_logger(),
                  "could not reach initial position for tilt servo, target: %0.2f, actual: %0.2f.",
