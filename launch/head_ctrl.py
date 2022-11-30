@@ -10,7 +10,7 @@ def generate_launch_description():
       name='l3xz_head_ctrl',
       output='screen',
       parameters=[
-          {'serial_port' : '"/dev/serial/by-id/usb-FTDI_USB__-__Serial_Converter_FT4NNZ55-if00-port0"'},
+          {'serial_port' : '/dev/serial/by-id/usb-FTDI_USB__-__Serial_Converter_FT4NNZ55-if00-port0'},
           {'serial_port_baudrate': 115200},
           {'pan_servo_id': 7},
           {'tilt_servo_id': 8},
