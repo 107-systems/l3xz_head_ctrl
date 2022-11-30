@@ -17,21 +17,23 @@
 namespace l3xz::head::state
 {
 
+using namespace mx28ar;
+
 /**************************************************************************************
  * PUBLIC MEMBER FUNCTIONS
  **************************************************************************************/
 
-void Teleop::onEnter(mx28ar::MX28AR_Control & /* mx28_ctrl */)
+void Teleop::onEnter(MX28AR_Control & /* mx28_ctrl */)
 {
 
 }
 
-void Teleop::onExit(mx28ar::MX28AR_Control & /* mx28_ctrl */)
+void Teleop::onExit(MX28AR_Control & /* mx28_ctrl */)
 {
 
 }
 
-StateBase * Teleop::update(mx28ar::MX28AR_Control & /* mx28_ctrl */, float const /* pan_angular_velocity */, float const /* tilt_angular_velocity */)
+StateBase * Teleop::update(MX28AR_Control & /* mx28_ctrl */, float const /* pan_angular_velocity */, float const /* tilt_angular_velocity */)
 {
   return this;
 }

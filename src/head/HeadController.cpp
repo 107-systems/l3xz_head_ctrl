@@ -19,11 +19,13 @@
 namespace l3xz::head
 {
 
+using namespace mx28ar;
+
 /**************************************************************************************
  * CTOR/DTOR
  **************************************************************************************/
 
-Controller::Controller(std::unique_ptr<mx28ar::MX28AR_Control> && mx28_ctrl)
+Controller::Controller(std::unique_ptr<MX28AR_Control> && mx28_ctrl)
 : _mx28_ctrl{std::move(mx28_ctrl)}
 , _head_state{new state::Teleop()}
 {
