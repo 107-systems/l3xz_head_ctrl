@@ -59,7 +59,7 @@ HeadControlNode::HeadControlNode()
   std::stringstream dyn_id_list;
   for (auto id : dyn_id_vect)
     dyn_id_list << static_cast<int>(id) << " ";
-  RCLCPP_INFO(get_logger(), "detected Dynamixel MX-28: { %s}", dyn_id_list.str().c_str());
+  RCLCPP_INFO(get_logger(), "detected Dynamixel MX-28AR: { %s}", dyn_id_list.str().c_str());
 
   _pan_servo_id  = static_cast<Dynamixel::Id>(get_parameter("pan_servo_id").as_int());
   _tilt_servo_id = static_cast<Dynamixel::Id>(get_parameter("tilt_servo_id").as_int());
