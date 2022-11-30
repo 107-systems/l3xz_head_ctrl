@@ -77,6 +77,8 @@ HeadControlNode::HeadControlNode()
   /* Instantiate MX-28AR controller and continue with pan/tilt head initialization. */
   _mx28_ctrl.reset(new MX28AR_Control(std::move(dyn_ctrl)));
 
+  RCLCPP_INFO(get_logger(), "initialize pan/servo in position control mode and set to initial angle.");
+
   Dynamixel::IdVect const pan_tilt_id_vect{_pan_servo_id, _tilt_servo_id};
 
   if (!_mx28_ctrl->setTorqueEnable(pan_tilt_id_vect, TorqueEnable::Off)) {
