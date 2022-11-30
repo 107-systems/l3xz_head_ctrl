@@ -12,8 +12,6 @@
  **************************************************************************************/
 
 #include "state/StateBase.h"
-#include "HeadControllerInput.h"
-#include "HeadControllerOutput.h"
 
 /**************************************************************************************
  * NAMESPACE
@@ -32,7 +30,7 @@ public:
    Controller();
   ~Controller();
 
-  ControllerOutput update(ControllerInput const & input, ControllerOutput const & prev_output);
+  void update(float const pan_angular_velocity, float const tilt_angular_velocity);
 
 private:
   state::StateBase * _head_state;

@@ -30,7 +30,7 @@ public:
   virtual ~Teleop() { }
   virtual void onEnter() override;
   virtual void onExit() override;
-  virtual std::tuple<StateBase *, ControllerOutput> update(ControllerInput const & input, ControllerOutput const & prev_output) override;
+  virtual StateBase * update(float const pan_angular_velocity, float const tilt_angular_velocity) override;
 };
 
 /**************************************************************************************

@@ -38,9 +38,9 @@ Controller::~Controller()
  * PUBLIC MEMBER FUNCTIONS
  **************************************************************************************/
 
-ControllerOutput Controller::update(ControllerInput const & input, ControllerOutput const & prev_output)
+void Controller::update(float const pan_angular_velocity, float const tilt_angular_velocity)
 {
-  auto [next_head_state, next_output] = _head_state->update(input, prev_output);
+  auto next_head_state = _head_state->update(pan_angular_velocity, tilt_angular_velocity);
     
   if (next_head_state != _head_state)
   {
@@ -51,8 +51,6 @@ ControllerOutput Controller::update(ControllerInput const & input, ControllerOut
     
     _head_state->onEnter();
   }
-
-  return next_output;
 }
 
 /**************************************************************************************

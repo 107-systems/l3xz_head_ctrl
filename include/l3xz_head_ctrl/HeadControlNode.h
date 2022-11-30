@@ -39,9 +39,8 @@ public:
 private:
   std::unique_ptr<mx28ar::MX28AR_Control> _mx28_ctrl;
   head::Controller _head_ctrl;
-  head::ControllerInput _head_ctrl_input;
-  head::ControllerOutput _head_ctrl_output;
   dynamixelplusplus::Dynamixel::Id _pan_servo_id, _tilt_servo_id;
+  float _pan_angular_velocity, _tilt_angular_velocity;
 
   rclcpp::Subscription<geometry_msgs::msg::Twist>::SharedPtr _head_sub;
   rclcpp::TimerBase::SharedPtr _ctrl_loop_timer;

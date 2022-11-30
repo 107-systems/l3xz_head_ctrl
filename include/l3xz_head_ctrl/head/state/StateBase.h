@@ -8,15 +8,6 @@
 #define HEAD_CONTROLLER_STATE_H_
 
 /**************************************************************************************
- * INCLUDES
- **************************************************************************************/
-
-#include <tuple>
-
-#include "../HeadControllerInput.h"
-#include "../HeadControllerOutput.h"
-
-/**************************************************************************************
  * NAMESPACE
  **************************************************************************************/
 
@@ -33,7 +24,7 @@ public:
   virtual ~StateBase() { }
   virtual void onEnter() { }
   virtual void onExit() { }
-  virtual std::tuple<StateBase *, ControllerOutput> update(ControllerInput const & input, ControllerOutput const & prev_output) = 0;
+  virtual StateBase * update(float const pan_angular_velocity, float const tilt_angular_velocity) = 0;
 };
 
 /**************************************************************************************

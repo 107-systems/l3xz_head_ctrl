@@ -28,10 +28,10 @@ HeadControlNode::HeadControlNode()
 : rclcpp::Node("l3xz_head_ctrl")
 , _mx28_ctrl{}
 , _head_ctrl{}
-, _head_ctrl_input{}
-, _head_ctrl_output{}
 , _pan_servo_id{DEFAULT_PAN_SERVO_ID}
 , _tilt_servo_id{DEFAULT_TILT_SERVO_ID}
+, _pan_angular_velocity{0.0f}
+, _tilt_angular_velocity{0.0f}
 {
   /* Configure the Dynamixel MX-28AR servos of the pan/tilt head. */
 
@@ -147,8 +147,8 @@ HeadControlNode::HeadControlNode()
     ("/l3xz/cmd_vel_head", 10,
     [this](geometry_msgs::msg::Twist::SharedPtr const msg)
     {
-      _head_ctrl_input.set_pan_angular_velocity (msg->angular.z);
-      _head_ctrl_input.set_tilt_angular_velocity(msg->angular.y);
+      _pan_angular_velocity  = msg->angular.z;
+      _tilt_angular_velocity = msg->angular.y;
     });
 
   /* Configure periodic control loop function. */
@@ -165,7 +165,7 @@ HeadControlNode::HeadControlNode()
 
 void HeadControlNode::onCtrlLoopTimerEvent()
 {
-  _head_ctrl_output = _head_ctrl.update(_head_ctrl_input, _head_ctrl_output);
+  _head_ctrl.update(_pan_angular_velocity, _tilt_angular_velocity);
 }
 
 /**************************************************************************************
