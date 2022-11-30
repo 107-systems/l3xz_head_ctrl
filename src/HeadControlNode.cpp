@@ -10,6 +10,8 @@
 
 #include <l3xz_head_ctrl/HeadControlNode.h>
 
+#include <l3xz_head_ctrl/MX28AR/MX28AR_Control.h>
+
 /**************************************************************************************
  * NAMESPACE
  **************************************************************************************/
@@ -26,7 +28,6 @@ using namespace mx28ar;
 
 HeadControlNode::HeadControlNode()
 : rclcpp::Node("l3xz_head_ctrl")
-, _mx28_ctrl{}
 , _head_ctrl{}
 , _pan_servo_id{DEFAULT_PAN_SERVO_ID}
 , _tilt_servo_id{DEFAULT_TILT_SERVO_ID}
@@ -75,23 +76,23 @@ HeadControlNode::HeadControlNode()
   }
 
   /* Instantiate MX-28AR controller and continue with pan/tilt head initialization. */
-  _mx28_ctrl.reset(new MX28AR_Control(std::move(dyn_ctrl)));
+  std::unique_ptr<MX28AR_Control> mx28_ctrl(new MX28AR_Control(std::move(dyn_ctrl)));
 
   RCLCPP_INFO(get_logger(), "initialize pan/servo in position control mode and set to initial angle.");
 
   Dynamixel::IdVect const pan_tilt_id_vect{_pan_servo_id, _tilt_servo_id};
 
-  if (!_mx28_ctrl->setTorqueEnable(pan_tilt_id_vect, TorqueEnable::Off)) {
+  if (!mx28_ctrl->setTorqueEnable(pan_tilt_id_vect, TorqueEnable::Off)) {
     RCLCPP_ERROR(get_logger(), "could not disable torque for pan/tilt servos.");
     rclcpp::shutdown();
   }
 
-  if (!_mx28_ctrl->setOperatingMode(pan_tilt_id_vect, OperatingMode::PositionControlMode)) {
+  if (!mx28_ctrl->setOperatingMode(pan_tilt_id_vect, OperatingMode::PositionControlMode)) {
     RCLCPP_ERROR(get_logger(), "could not configure pan/tilt servos for position control mode.");
     rclcpp::shutdown();
   }
 
-  if (!_mx28_ctrl->setTorqueEnable(pan_tilt_id_vect, TorqueEnable::On)) {
+  if (!mx28_ctrl->setTorqueEnable(pan_tilt_id_vect, TorqueEnable::On)) {
     RCLCPP_ERROR(get_logger(), "could not enable torque for pan/tilt servos.");
     rclcpp::shutdown();
   }
@@ -101,7 +102,7 @@ HeadControlNode::HeadControlNode()
     {_pan_servo_id, get_parameter("pan_servo_initial_angle").as_double()},
     {_tilt_servo_id, get_parameter("tilt_servo_initial_angle").as_double()}
   };
-  if (!_mx28_ctrl->setGoalPosition(INITIAL_HEAD_POSITION_deg)) {
+  if (!mx28_ctrl->setGoalPosition(INITIAL_HEAD_POSITION_deg)) {
     RCLCPP_ERROR(get_logger(),
                  "could not set initial position for pan (%0.2f) / tilt (%0.2f) servo.",
                  INITIAL_HEAD_POSITION_deg.at(_pan_servo_id),
@@ -110,7 +111,7 @@ HeadControlNode::HeadControlNode()
   }
 
   std::map<Dynamixel::Id, float> actual_head_position_deg;
-  if (!_mx28_ctrl->getPresentPosition(pan_tilt_id_vect, actual_head_position_deg)) {
+  if (!mx28_ctrl->getPresentPosition(pan_tilt_id_vect, actual_head_position_deg)) {
     RCLCPP_ERROR(get_logger(), "could not read current position for pan/tilt servo.");
     rclcpp::shutdown();
   }
@@ -141,6 +142,8 @@ HeadControlNode::HeadControlNode()
     rclcpp::shutdown();
   }
 
+  _head_ctrl.reset(new head::Controller(std::move(mx28_ctrl)));
+
   /* Configure subscribers and publishers. */
 
   _head_sub = create_subscription<geometry_msgs::msg::Twist>
@@ -165,7 +168,7 @@ HeadControlNode::HeadControlNode()
 
 void HeadControlNode::onCtrlLoopTimerEvent()
 {
-  _head_ctrl.update(_pan_angular_velocity, _tilt_angular_velocity);
+  _head_ctrl->update(_pan_angular_velocity, _tilt_angular_velocity);
 }
 
 /**************************************************************************************

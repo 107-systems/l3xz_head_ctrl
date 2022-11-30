@@ -8,6 +8,12 @@
 #define HEAD_CONTROLLER_STATE_H_
 
 /**************************************************************************************
+ * INCLUDES
+ **************************************************************************************/
+
+#include <l3xz_head_ctrl/MX28AR/MX28AR_Control.h>
+
+/**************************************************************************************
  * NAMESPACE
  **************************************************************************************/
 
@@ -24,7 +30,7 @@ public:
   virtual ~StateBase() { }
   virtual void onEnter() { }
   virtual void onExit() { }
-  virtual StateBase * update(float const pan_angular_velocity, float const tilt_angular_velocity) = 0;
+  virtual StateBase * update(mx28ar::MX28AR_Control & mx28_ctrl, float const pan_angular_velocity, float const tilt_angular_velocity) = 0;
 };
 
 /**************************************************************************************

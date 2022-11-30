@@ -18,7 +18,6 @@
 #include <geometry_msgs/msg/twist.hpp>
 
 #include <l3xz_head_ctrl/head/HeadController.h>
-#include <l3xz_head_ctrl/MX28AR/MX28AR_Control.h>
 
 /**************************************************************************************
  * NAMESPACE
@@ -37,8 +36,7 @@ public:
   HeadControlNode();
 
 private:
-  std::unique_ptr<mx28ar::MX28AR_Control> _mx28_ctrl;
-  head::Controller _head_ctrl;
+  std::unique_ptr<head::Controller> _head_ctrl;
   dynamixelplusplus::Dynamixel::Id _pan_servo_id, _tilt_servo_id;
   float _pan_angular_velocity, _tilt_angular_velocity;
 

@@ -23,8 +23,9 @@ namespace l3xz::head
  * CTOR/DTOR
  **************************************************************************************/
 
-Controller::Controller()
-: _head_state{new state::Teleop()}
+Controller::Controller(std::unique_ptr<mx28ar::MX28AR_Control> && mx28_ctrl)
+: _mx28_ctrl{std::move(mx28_ctrl)}
+, _head_state{new state::Teleop()}
 {
   _head_state->onEnter();
 }
@@ -40,7 +41,7 @@ Controller::~Controller()
 
 void Controller::update(float const pan_angular_velocity, float const tilt_angular_velocity)
 {
-  auto next_head_state = _head_state->update(pan_angular_velocity, tilt_angular_velocity);
+  auto next_head_state = _head_state->update(*_mx28_ctrl, pan_angular_velocity, tilt_angular_velocity);
     
   if (next_head_state != _head_state)
   {

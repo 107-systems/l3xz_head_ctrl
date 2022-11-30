@@ -30,7 +30,7 @@ public:
   virtual ~Teleop() { }
   virtual void onEnter() override;
   virtual void onExit() override;
-  virtual StateBase * update(float const pan_angular_velocity, float const tilt_angular_velocity) override;
+  virtual StateBase * update(mx28ar::MX28AR_Control & mx28_ctrl, float const pan_angular_velocity, float const tilt_angular_velocity) override;
 };
 
 /**************************************************************************************

@@ -31,7 +31,7 @@ void Teleop::onExit()
 
 }
 
-StateBase * Teleop::update(float const /* pan_angular_velocity */, float const /* tilt_angular_velocity */)
+StateBase * Teleop::update(mx28ar::MX28AR_Control & /* mx28_ctrl */, float const /* pan_angular_velocity */, float const /* tilt_angular_velocity */)
 {
   return this;
 }
