@@ -20,12 +20,30 @@ namespace l3xz::head::state
 using namespace mx28ar;
 
 /**************************************************************************************
+ * CTOR/DTOR
+ **************************************************************************************/
+
+Teleop::Teleop(rclcpp::Logger const logger, dynamixelplusplus::Dynamixel::Id const pan_servo_id, dynamixelplusplus::Dynamixel::Id const tilt_servo_id)
+: StateBase(logger, pan_servo_id, tilt_servo_id)
+{
+
+}
+
+/**************************************************************************************
  * PUBLIC MEMBER FUNCTIONS
  **************************************************************************************/
 
-void Teleop::onEnter(MX28AR_Control & /* mx28_ctrl */)
+void Teleop::onEnter(MX28AR_Control & mx28_ctrl)
 {
+  if (!mx28_ctrl.setTorqueEnable(_pan_tilt_id_vect, TorqueEnable::Off)) {
+    RCLCPP_ERROR(_logger, "could not disable torque for pan/tilt servos.");
+    rclcpp::shutdown();
+  }
 
+  if (!mx28_ctrl.setOperatingMode(_pan_tilt_id_vect, OperatingMode::VelocityControlMode)) {
+    RCLCPP_ERROR(_logger, "could not configure pan/tilt servos for velocity control mode.");
+    rclcpp::shutdown();
+  }
 }
 
 void Teleop::onExit(MX28AR_Control & /* mx28_ctrl */)
@@ -35,6 +53,8 @@ void Teleop::onExit(MX28AR_Control & /* mx28_ctrl */)
 
 StateBase * Teleop::update(MX28AR_Control & /* mx28_ctrl */, float const /* pan_angular_velocity */, float const /* tilt_angular_velocity */)
 {
+  /* TODO: Set desired velocity AND limit angles. */
+
   return this;
 }
 

@@ -31,7 +31,10 @@ namespace l3xz::head
 class Controller
 {
 public:
-   Controller(std::unique_ptr<mx28ar::MX28AR_Control> && mx28_ctrl);
+   Controller(std::unique_ptr<mx28ar::MX28AR_Control> && mx28_ctrl,
+              rclcpp::Logger const logger,
+              dynamixelplusplus::Dynamixel::Id const pan_servo_id,
+              dynamixelplusplus::Dynamixel::Id const tilt_servo_id);
   ~Controller();
 
 

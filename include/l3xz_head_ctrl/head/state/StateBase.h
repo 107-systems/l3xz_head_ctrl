@@ -11,6 +11,10 @@
  * INCLUDES
  **************************************************************************************/
 
+#include <rclcpp/rclcpp.hpp>
+
+#include <dynamixel++/Dynamixel++.h>
+
 #include <l3xz_head_ctrl/MX28AR/MX28AR_Control.h>
 
 /**************************************************************************************
@@ -27,10 +31,25 @@ namespace l3xz::head::state
 class StateBase
 {
 public:
+  StateBase(rclcpp::Logger const logger, dynamixelplusplus::Dynamixel::Id const pan_servo_id, dynamixelplusplus::Dynamixel::Id const tilt_servo_id)
+  : _logger{logger}
+  , _pan_servo_id{pan_servo_id}
+  , _tilt_servo_id{tilt_servo_id}
+  , _pan_tilt_id_vect{_pan_servo_id, _tilt_servo_id}
+  { }
   virtual ~StateBase() { }
+
+
   virtual void onEnter(mx28ar::MX28AR_Control & mx28_ctrl) = 0;
   virtual void onExit(mx28ar::MX28AR_Control & mx28_ctrl) = 0;
   virtual StateBase * update(mx28ar::MX28AR_Control & mx28_ctrl, float const pan_angular_velocity, float const tilt_angular_velocity) = 0;
+
+
+protected:
+  rclcpp::Logger const _logger;
+  dynamixelplusplus::Dynamixel::Id const _pan_servo_id;
+  dynamixelplusplus::Dynamixel::Id const _tilt_servo_id;
+  dynamixelplusplus::Dynamixel::IdVect const _pan_tilt_id_vect;
 };
 
 /**************************************************************************************

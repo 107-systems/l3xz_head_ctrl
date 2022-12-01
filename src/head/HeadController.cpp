@@ -25,9 +25,12 @@ using namespace mx28ar;
  * CTOR/DTOR
  **************************************************************************************/
 
-Controller::Controller(std::unique_ptr<MX28AR_Control> && mx28_ctrl)
+Controller::Controller(std::unique_ptr<MX28AR_Control> && mx28_ctrl,
+                       rclcpp::Logger const logger,
+                       dynamixelplusplus::Dynamixel::Id const pan_servo_id,
+                       dynamixelplusplus::Dynamixel::Id const tilt_servo_id)
 : _mx28_ctrl{std::move(mx28_ctrl)}
-, _head_state{new state::Teleop()}
+, _head_state{new state::Teleop(logger, pan_servo_id, tilt_servo_id)}
 {
   _head_state->onEnter(*_mx28_ctrl);
 }

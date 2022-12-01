@@ -142,7 +142,7 @@ HeadControlNode::HeadControlNode()
     rclcpp::shutdown();
   }
 
-  _head_ctrl.reset(new head::Controller(std::move(mx28_ctrl)));
+  _head_ctrl.reset(new head::Controller(std::move(mx28_ctrl), get_logger(), _pan_servo_id, _tilt_servo_id));
 
   /* Configure subscribers and publishers. */
 
