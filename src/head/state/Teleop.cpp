@@ -81,17 +81,19 @@ StateBase * Teleop::update(MX28AR_Control & mx28_ctrl, float const pan_angular_v
   static float constexpr MIN_ANGLE_TILT_deg = 180.0f - 35.0f;
   static float constexpr MAX_ANGLE_TILT_deg = 180.0f + 35.0f;
 
-  if ((actual_head_position_deg.at(_pan_servo_id) < MIN_ANGLE_PAN_deg) || (actual_head_position_deg.at(_pan_servo_id) > MAX_ANGLE_PAN_deg))
+  if ((actual_head_position_deg.at(_pan_servo_id) < MIN_ANGLE_PAN_deg) && (pan_angular_velocity_dps < 0.0f))
     _goal_velocity_rpm[_pan_servo_id] = 0.0f;
-  if ((actual_head_position_deg.at(_tilt_servo_id) < MIN_ANGLE_TILT_deg) || (actual_head_position_deg.at(_tilt_servo_id) > MAX_ANGLE_TILT_deg))
+  if ((actual_head_position_deg.at(_pan_servo_id) > MAX_ANGLE_PAN_deg) && (pan_angular_velocity_dps > 0.0f))
+    _goal_velocity_rpm[_pan_servo_id] = 0.0f;
+  if ((actual_head_position_deg.at(_tilt_servo_id) < MIN_ANGLE_TILT_deg) && (tilt_angular_velocity_dps < 0.0f))
+    _goal_velocity_rpm[_tilt_servo_id] = 0.0f;
+  if ((actual_head_position_deg.at(_tilt_servo_id) > MAX_ANGLE_TILT_deg) && (tilt_angular_velocity_dps > 0.0f))
     _goal_velocity_rpm[_tilt_servo_id] = 0.0f;
 
   /* Write the computed RPM value to the Dynamixel MX-28AR
    * servos of the pan/tilt head.
    */
   CHECK(!mx28_ctrl.setGoalVelocity(_goal_velocity_rpm), "could not set pan/tilt servo velocity.");
-
-  RCLCPP_INFO(_logger, "pan_rpm = %0.2f, tilt_rpm = %0.2f", _goal_velocity_rpm[_pan_servo_id], _goal_velocity_rpm[_tilt_servo_id]);
 
   return this;
 }
