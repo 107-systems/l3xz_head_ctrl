@@ -17,7 +17,7 @@
 
 #include <geometry_msgs/msg/twist.hpp>
 
-#include <l3xz_head_ctrl/head/HeadController.h>
+#include "Controller.h"
 
 /**************************************************************************************
  * NAMESPACE

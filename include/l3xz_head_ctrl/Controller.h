@@ -13,9 +13,8 @@
 
 #include <memory>
 
-#include <l3xz_head_ctrl/MX28AR/MX28AR_Control.h>
-
 #include "state/StateBase.h"
+#include "MX28AR/MX28AR_Control.h"
 
 /**************************************************************************************
  * NAMESPACE
