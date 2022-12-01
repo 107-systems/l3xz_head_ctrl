@@ -17,6 +17,7 @@
 namespace l3xz::head::state
 {
 
+using namespace dynamixelplusplus;
 using namespace mx28ar;
 
 /**************************************************************************************
@@ -62,9 +63,43 @@ void Teleop::onExit(MX28AR_Control & /* mx28_ctrl */)
 
 }
 
-StateBase * Teleop::update(MX28AR_Control & /* mx28_ctrl */, float const /* pan_angular_velocity */, float const /* tilt_angular_velocity */)
+StateBase * Teleop::update(MX28AR_Control & mx28_ctrl, float const /* pan_angular_velocity */, float const /* tilt_angular_velocity */)
 {
   /* TODO: Set desired velocity AND limit angles. */
+  float pan_rpm = -10.0f;
+  float tilt_rpm = -10.0f;
+
+  /* Checking current head position and stopping if either
+   * pan or tilt angle would exceed the maximum allowed
+   * angle.
+   */
+  std::map<Dynamixel::Id, float> actual_head_position_deg;
+  CHECK(!mx28_ctrl.getPresentPosition(_pan_tilt_id_vect, actual_head_position_deg), "could not read current position for pan/tilt servo.");
+  CHECK(!actual_head_position_deg.count(_pan_servo_id), "could no position data for pan servo.");
+  CHECK(!actual_head_position_deg.count(_tilt_servo_id), "could no position data for tilt servo.");
+
+  static float constexpr MIN_ANGLE_PAN_deg  = 180.0f - 45.0f;
+  static float constexpr MAX_ANGLE_PAN_deg  = 180.0f + 45.0f;
+  static float constexpr MIN_ANGLE_TILT_deg = 180.0f - 45.0f;
+  static float constexpr MAX_ANGLE_TILT_deg = 180.0f + 45.0f;
+
+  if ((actual_head_position_deg.at(_pan_servo_id) < MIN_ANGLE_PAN_deg) || (actual_head_position_deg.at(_pan_servo_id) > MAX_ANGLE_PAN_deg))
+    pan_rpm = 0.0f;
+  if ((actual_head_position_deg.at(_tilt_servo_id) < MIN_ANGLE_TILT_deg) || (actual_head_position_deg.at(_tilt_servo_id) > MAX_ANGLE_TILT_deg))
+    tilt_rpm = 0.0f;
+
+  /* Write the computed RPM value to the Dynamixel MX-28AR
+   * servos.
+   */
+  std::map<dynamixelplusplus::Dynamixel::Id, float> const pan_tilt_rpm_map =
+    {
+      {_pan_servo_id,  pan_rpm},
+      {_tilt_servo_id, tilt_rpm},
+    };
+  CHECK(!mx28_ctrl.setGoalVelocity(pan_tilt_rpm_map), "could not set pan/tilt servo velocity.");
+
+  RCLCPP_INFO(_logger, "pan_rpm = %0.2f, tilt_rpm = %0.2f", pan_rpm, tilt_rpm);
+
 
   return this;
 }

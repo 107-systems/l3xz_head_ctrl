@@ -100,8 +100,8 @@ Node::Node()
 
   std::map<Dynamixel::Id, float> actual_head_position_deg;
   CHECK(!mx28_ctrl->getPresentPosition(pan_tilt_id_vect, actual_head_position_deg), "could not read current position for pan/tilt servo.");
-  CHECK(!actual_head_position_deg.count(_pan_servo_id), "could no position data for pan servo.");
-  CHECK(!actual_head_position_deg.count(_tilt_servo_id), "could no position data for tilt servo.");
+  CHECK(!actual_head_position_deg.count(_pan_servo_id), "no position data for pan servo.");
+  CHECK(!actual_head_position_deg.count(_tilt_servo_id), "no position data for tilt servo.");
 
   std::this_thread::sleep_for(std::chrono::seconds(1));
 
