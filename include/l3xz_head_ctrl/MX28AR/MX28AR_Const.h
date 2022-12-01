@@ -28,6 +28,7 @@ enum class ControlTable : uint16_t
 {
   OperatingMode   =  11,
   TorqueEnable    =  64,
+  GoalVelocity    = 104,
   GoalPosition    = 116,
   PresentPosition = 132,
 };

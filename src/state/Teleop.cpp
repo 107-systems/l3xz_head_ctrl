@@ -44,6 +44,16 @@ void Teleop::onEnter(MX28AR_Control & mx28_ctrl)
     RCLCPP_ERROR(_logger, "could not configure pan/tilt servos for velocity control mode.");
     rclcpp::shutdown();
   }
+
+  std::map<dynamixelplusplus::Dynamixel::Id, float> const INITIAL_ID_RPM_MAP =
+  {
+    {_pan_servo_id,  0.0f},
+    {_tilt_servo_id, 0.0f},
+  };
+  if (!mx28_ctrl.setGoalVelocity(INITIAL_ID_RPM_MAP)) {
+    RCLCPP_ERROR(_logger, "could not set initial pan/tilt servo velocity.");
+    rclcpp::shutdown();
+  }
 }
 
 void Teleop::onExit(MX28AR_Control & /* mx28_ctrl */)

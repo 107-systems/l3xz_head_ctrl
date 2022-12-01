@@ -80,6 +80,31 @@ bool MX28AR_Control::getPresentPosition(Dynamixel::IdVect const & id_vect, std::
   return true;
 }
 
+bool MX28AR_Control::setGoalVelocity(std::map<dynamixelplusplus::Dynamixel::Id, float> const & id_rpm_map)
+{
+  std::map<Dynamixel::Id, uint32_t> goal_velocity_data_map;
+
+  static float const RPM_per_LSB = 0.229f;
+  static float const MAX_VELOCITY_rpm = RPM_per_LSB * 1023.0f;
+  static float const MIN_VELOCITY_rpm = RPM_per_LSB * 1023.0f * (-1.0);
+
+  auto limit_velocity = [](float const rpm)
+  {
+         if (rpm < MIN_VELOCITY_rpm) return MIN_VELOCITY_rpm;
+    else if (rpm > MAX_VELOCITY_rpm) return MAX_VELOCITY_rpm;
+    else                             return rpm;
+  };
+
+  for (auto [id, rpm] : id_rpm_map)
+  {
+    auto const rpm_limited = limit_velocity(rpm);
+    int32_t const rpm_lsb_signed = static_cast<int32_t>(rpm_limited * RPM_per_LSB);
+    goal_velocity_data_map[id] = static_cast<uint32_t>(rpm_lsb_signed);
+  }
+
+  return (_dyn_ctrl->syncWrite(static_cast<uint16_t>(ControlTable::GoalVelocity), goal_velocity_data_map) == Dynamixel::Error::None);
+}
+
 /**************************************************************************************
  * NAMESPACE
  **************************************************************************************/
