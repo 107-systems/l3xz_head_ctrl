@@ -9,6 +9,7 @@ def generate_launch_description():
       executable='l3xz_head_ctrl_node',
       name='l3xz_head_ctrl',
       output='screen',
+      emulate_tty=True,
       parameters=[
           {'serial_port' : '/dev/serial/by-id/usb-FTDI_USB__-__Serial_Converter_FT4NNZ55-if00-port0'},
           {'serial_port_baudrate': 115200},
