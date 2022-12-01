@@ -98,22 +98,30 @@ Node::Node()
         INITIAL_HEAD_POSITION_deg.at(_pan_servo_id),
         INITIAL_HEAD_POSITION_deg.at(_tilt_servo_id));
 
+  bool pan_target_reached = false, tilt_target_reached = false;
   std::map<Dynamixel::Id, float> actual_head_position_deg;
-  CHECK(!mx28_ctrl->getPresentPosition(pan_tilt_id_vect, actual_head_position_deg), "could not read current position for pan/tilt servo.");
-  CHECK(!actual_head_position_deg.count(_pan_servo_id), "no position data for pan servo.");
-  CHECK(!actual_head_position_deg.count(_tilt_servo_id), "no position data for tilt servo.");
+  for (auto const start = std::chrono::system_clock::now();
+       (std::chrono::system_clock::now() - start) < std::chrono::seconds(5) && !pan_target_reached && !tilt_target_reached; )
+  {
+    std::this_thread::sleep_for(std::chrono::seconds(1));
 
-  std::this_thread::sleep_for(std::chrono::seconds(1));
+    CHECK(!mx28_ctrl->getPresentPosition(pan_tilt_id_vect, actual_head_position_deg), "could not read current position for pan/tilt servo.");
+    CHECK(!actual_head_position_deg.count(_pan_servo_id), "no position data for pan servo.");
+    CHECK(!actual_head_position_deg.count(_tilt_servo_id), "no position data for tilt servo.");
 
-  static float constexpr INITIAL_ANGLE_EPSILON_deg = 2.0f;
-  CHECK(fabs(actual_head_position_deg.at(_pan_servo_id) - INITIAL_HEAD_POSITION_deg.at(_pan_servo_id)) > INITIAL_ANGLE_EPSILON_deg,
+    static float constexpr INITIAL_ANGLE_EPSILON_deg = 2.0f;
+    pan_target_reached  = fabs(actual_head_position_deg.at(_pan_servo_id)  - INITIAL_HEAD_POSITION_deg.at(_pan_servo_id))  < INITIAL_ANGLE_EPSILON_deg;
+    tilt_target_reached = fabs(actual_head_position_deg.at(_tilt_servo_id) - INITIAL_HEAD_POSITION_deg.at(_tilt_servo_id)) < INITIAL_ANGLE_EPSILON_deg;
+  }
+  CHECK(!pan_target_reached,
         "could not reach initial position for pan servo, target: %0.2f, actual: %0.2f.",
         INITIAL_HEAD_POSITION_deg.at(_pan_servo_id),
         actual_head_position_deg.at(_pan_servo_id));
-  CHECK(fabs(actual_head_position_deg.at(_tilt_servo_id) - INITIAL_HEAD_POSITION_deg.at(_tilt_servo_id)) > INITIAL_ANGLE_EPSILON_deg,
+  CHECK(!tilt_target_reached,
         "could not reach initial position for tilt servo, target: %0.2f, actual: %0.2f.",
         INITIAL_HEAD_POSITION_deg.at(_tilt_servo_id),
         actual_head_position_deg.at(_tilt_servo_id));
+
 
   _head_ctrl.reset(new Controller(std::move(mx28_ctrl), get_logger(), _pan_servo_id, _tilt_servo_id));
 

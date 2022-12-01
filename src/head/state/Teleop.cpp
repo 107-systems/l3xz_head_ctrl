@@ -77,10 +77,10 @@ StateBase * Teleop::update(MX28AR_Control & mx28_ctrl, float const /* pan_angula
   CHECK(!actual_head_position_deg.count(_pan_servo_id), "could no position data for pan servo.");
   CHECK(!actual_head_position_deg.count(_tilt_servo_id), "could no position data for tilt servo.");
 
-  static float constexpr MIN_ANGLE_PAN_deg  = 180.0f - 45.0f;
-  static float constexpr MAX_ANGLE_PAN_deg  = 180.0f + 45.0f;
-  static float constexpr MIN_ANGLE_TILT_deg = 180.0f - 45.0f;
-  static float constexpr MAX_ANGLE_TILT_deg = 180.0f + 45.0f;
+  static float constexpr MIN_ANGLE_PAN_deg  = 180.0f - 35.0f;
+  static float constexpr MAX_ANGLE_PAN_deg  = 180.0f + 35.0f;
+  static float constexpr MIN_ANGLE_TILT_deg = 180.0f - 35.0f;
+  static float constexpr MAX_ANGLE_TILT_deg = 180.0f + 35.0f;
 
   if ((actual_head_position_deg.at(_pan_servo_id) < MIN_ANGLE_PAN_deg) || (actual_head_position_deg.at(_pan_servo_id) > MAX_ANGLE_PAN_deg))
     pan_rpm = 0.0f;
