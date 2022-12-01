@@ -98,7 +98,7 @@ bool MX28AR_Control::setGoalVelocity(std::map<dynamixelplusplus::Dynamixel::Id, 
   for (auto [id, rpm] : id_rpm_map)
   {
     auto const rpm_limited = limit_velocity(rpm);
-    int32_t const rpm_lsb_signed = static_cast<int32_t>(rpm_limited * RPM_per_LSB);
+    int32_t const rpm_lsb_signed = static_cast<int32_t>(rpm_limited / RPM_per_LSB);
     goal_velocity_data_map[id] = static_cast<uint32_t>(rpm_lsb_signed);
   }
 
