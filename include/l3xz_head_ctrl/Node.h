@@ -30,10 +30,10 @@ namespace l3xz
  * CLASS DECLARATION
  **************************************************************************************/
 
-class HeadControlNode : public rclcpp::Node
+class Node : public rclcpp::Node
 {
 public:
-  HeadControlNode();
+  Node();
 
 private:
   std::unique_ptr<head::Controller> _head_ctrl;

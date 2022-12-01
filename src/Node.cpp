@@ -8,7 +8,7 @@
  * INCLUDE
  **************************************************************************************/
 
-#include <l3xz_head_ctrl/HeadControlNode.h>
+#include <l3xz_head_ctrl/Node.h>
 
 #include <l3xz_head_ctrl/MX28AR/MX28AR_Control.h>
 
@@ -26,7 +26,7 @@ using namespace mx28ar;
  * CTOR/DTOR
  **************************************************************************************/
 
-HeadControlNode::HeadControlNode()
+Node::Node()
 : rclcpp::Node("l3xz_head_ctrl")
 , _head_ctrl{}
 , _pan_servo_id{DEFAULT_PAN_SERVO_ID}
@@ -166,7 +166,7 @@ HeadControlNode::HeadControlNode()
  * PRIVATE MEMBER FUNCTIONS
  **************************************************************************************/
 
-void HeadControlNode::onCtrlLoopTimerEvent()
+void Node::onCtrlLoopTimerEvent()
 {
   _head_ctrl->update(_pan_angular_velocity, _tilt_angular_velocity);
 }
