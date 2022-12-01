@@ -45,6 +45,11 @@ void Teleop::onEnter(MX28AR_Control & mx28_ctrl)
     rclcpp::shutdown();
   }
 
+  if (!mx28_ctrl.setTorqueEnable(_pan_tilt_id_vect, TorqueEnable::On)) {
+    RCLCPP_ERROR(_logger, "could not enable torque for pan/tilt servos.");
+    rclcpp::shutdown();
+  }
+
   std::map<dynamixelplusplus::Dynamixel::Id, float> const INITIAL_ID_RPM_MAP =
   {
     {_pan_servo_id,  0.0f},
