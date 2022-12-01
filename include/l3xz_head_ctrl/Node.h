@@ -43,10 +43,6 @@ private:
   rclcpp::Subscription<geometry_msgs::msg::Twist>::SharedPtr _head_sub;
   rclcpp::TimerBase::SharedPtr _ctrl_loop_timer;
 
-  void onCtrlLoopTimerEvent();
-
-  void updateHeadControllerInput(geometry_msgs::msg::Twist::SharedPtr const msg);
-
   static int                              constexpr DEFAULT_SERIAL_BAUDRATE          = 115200;
   static dynamixelplusplus::Dynamixel::Id constexpr DEFAULT_PAN_SERVO_ID             = 7;
   static dynamixelplusplus::Dynamixel::Id constexpr DEFAULT_TILT_SERVO_ID            = 8;

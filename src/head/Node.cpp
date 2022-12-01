@@ -138,18 +138,13 @@ Node::Node()
   /* Configure periodic control loop function. */
 
   _ctrl_loop_timer = create_wall_timer
-    (std::chrono::milliseconds(50), [this]() { this->onCtrlLoopTimerEvent(); });
+    (std::chrono::milliseconds(50),
+     [this]()
+     {
+       _head_ctrl->update(_pan_angular_velocity, _tilt_angular_velocity);
+     });
 
   RCLCPP_INFO(get_logger(), "node initialization complete.");
-}
-
-/**************************************************************************************
- * PRIVATE MEMBER FUNCTIONS
- **************************************************************************************/
-
-void Node::onCtrlLoopTimerEvent()
-{
-  _head_ctrl->update(_pan_angular_velocity, _tilt_angular_velocity);
 }
 
 /**************************************************************************************
