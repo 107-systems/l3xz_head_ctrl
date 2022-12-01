@@ -30,9 +30,13 @@ public:
   Teleop(rclcpp::Logger const logger, dynamixelplusplus::Dynamixel::Id const pan_servo_id, dynamixelplusplus::Dynamixel::Id const tilt_servo_id);
   virtual ~Teleop() { }
 
+
   virtual void onEnter(mx28ar::MX28AR_Control & mx28_ctrl) override;
   virtual void onExit(mx28ar::MX28AR_Control & mx28_ctrl) override;
   virtual StateBase * update(mx28ar::MX28AR_Control & mx28_ctrl, float const pan_angular_velocity, float const tilt_angular_velocity) override;
+
+private:
+  std::map<dynamixelplusplus::Dynamixel::Id, float> _goal_velocity_rpm;
 };
 
 /**************************************************************************************

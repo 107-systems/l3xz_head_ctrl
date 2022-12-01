@@ -36,6 +36,11 @@ using namespace mx28ar;
 
 Teleop::Teleop(rclcpp::Logger const logger, dynamixelplusplus::Dynamixel::Id const pan_servo_id, dynamixelplusplus::Dynamixel::Id const tilt_servo_id)
 : StateBase(logger, pan_servo_id, tilt_servo_id)
+, _goal_velocity_rpm
+{
+  {_pan_servo_id,  0.0f},
+  {_tilt_servo_id, 0.0f},
+}
 {
 
 }
@@ -49,13 +54,7 @@ void Teleop::onEnter(MX28AR_Control & mx28_ctrl)
   CHECK(!mx28_ctrl.setTorqueEnable(_pan_tilt_id_vect, TorqueEnable::Off), "could not disable torque for pan/tilt servos.");
   CHECK(!mx28_ctrl.setOperatingMode(_pan_tilt_id_vect, OperatingMode::VelocityControlMode), "could not configure pan/tilt servos for velocity control mode.");
   CHECK(!mx28_ctrl.setTorqueEnable(_pan_tilt_id_vect, TorqueEnable::On), "could not enable torque for pan/tilt servos.");
-
-  std::map<dynamixelplusplus::Dynamixel::Id, float> const INITIAL_ID_RPM_MAP =
-  {
-    {_pan_servo_id,  0.0f},
-    {_tilt_servo_id, 0.0f},
-  };
-  CHECK(!mx28_ctrl.setGoalVelocity(INITIAL_ID_RPM_MAP), "could not set initial pan/tilt servo velocity.");
+  CHECK(!mx28_ctrl.setGoalVelocity(_goal_velocity_rpm), "could not set initial pan/tilt servo velocity.");
 }
 
 void Teleop::onExit(MX28AR_Control & /* mx28_ctrl */)
@@ -91,15 +90,11 @@ StateBase * Teleop::update(MX28AR_Control & mx28_ctrl, float const /* pan_angula
   /* Write the computed RPM value to the Dynamixel MX-28AR
    * servos.
    */
-  std::map<dynamixelplusplus::Dynamixel::Id, float> const pan_tilt_rpm_map =
-    {
-      {_pan_servo_id,  pan_rpm},
-      {_tilt_servo_id, tilt_rpm},
-    };
-  CHECK(!mx28_ctrl.setGoalVelocity(pan_tilt_rpm_map), "could not set pan/tilt servo velocity.");
+  _goal_velocity_rpm[_pan_servo_id] = pan_rpm;
+  _goal_velocity_rpm[_tilt_servo_id] = tilt_rpm;
+  CHECK(!mx28_ctrl.setGoalVelocity(_goal_velocity_rpm), "could not set pan/tilt servo velocity.");
 
   RCLCPP_INFO(_logger, "pan_rpm = %0.2f, tilt_rpm = %0.2f", pan_rpm, tilt_rpm);
-
 
   return this;
 }
