@@ -20,7 +20,7 @@ colcon_ws$ colcon build --packages-select l3xz_head_ctrl
 #### How-to-run
 ```bash
 colcon_ws$ . install/setup.bash
-colcon_ws$ ros2 launch l3xz_head_ctrl head_ctrl.py
+colcon_ws$ ros2 launch l3xz_head_ctrl head.py
 ```
 
 #### Interface Documentation
