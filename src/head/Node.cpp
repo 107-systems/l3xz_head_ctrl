@@ -26,10 +26,10 @@ using namespace mx28ar;
  * DEFINE
  **************************************************************************************/
 
-#define CHECK(cond,err_msg)                \
-  if (cond) {                              \
-    RCLCPP_ERROR(get_logger(), (err_msg)); \
-    rclcpp::shutdown();                    \
+#define CHECK(cond,...)                      \
+  if (cond) {                                \
+    RCLCPP_ERROR(get_logger(), __VA_ARGS__); \
+    rclcpp::shutdown();                      \
   }
 
 /**************************************************************************************
@@ -62,10 +62,7 @@ Node::Node()
 
   /* Determine which/if any servos can be reached via the connected network. */
   auto [err_ping, dyn_id_vect] = dyn_ctrl->broadcastPing();
-  if (err_ping != Dynamixel::Error::None) {
-    RCLCPP_ERROR(get_logger(), "'broadcastPing' failed with error code %d", static_cast<int>(err_ping));
-    rclcpp::shutdown();
-  }
+  CHECK(err_ping != Dynamixel::Error::None, "'broadcastPing' failed with error code %d", static_cast<int>(err_ping));
 
   std::stringstream dyn_id_list;
   for (auto id : dyn_id_vect)
@@ -75,15 +72,10 @@ Node::Node()
   _pan_servo_id  = static_cast<Dynamixel::Id>(get_parameter("pan_servo_id").as_int());
   _tilt_servo_id = static_cast<Dynamixel::Id>(get_parameter("tilt_servo_id").as_int());
 
-  if (std::none_of(std::cbegin(dyn_id_vect), std::cend(dyn_id_vect), [this](Dynamixel::Id const id) { return (id == _pan_servo_id); })) {
-    RCLCPP_ERROR(get_logger(), "pan servo with configured id %d not online.", static_cast<int>(_pan_servo_id));
-    rclcpp::shutdown();
-  }
-
-  if (std::none_of(std::cbegin(dyn_id_vect), std::cend(dyn_id_vect), [this](Dynamixel::Id const id) { return (id == _tilt_servo_id); })) {
-    RCLCPP_ERROR(get_logger(), "tilt servo with configured id %d not online.", static_cast<int>(_tilt_servo_id));
-    rclcpp::shutdown();
-  }
+  CHECK(std::none_of(std::cbegin(dyn_id_vect), std::cend(dyn_id_vect), [this](Dynamixel::Id const id) { return (id == _pan_servo_id); }),
+        "pan servo with configured id %d not online.", static_cast<int>(_pan_servo_id));
+  CHECK(std::none_of(std::cbegin(dyn_id_vect), std::cend(dyn_id_vect), [this](Dynamixel::Id const id) { return (id == _tilt_servo_id); }),
+        "tilt servo with configured id %d not online.", static_cast<int>(_tilt_servo_id));
 
   /* Instantiate MX-28AR controller and continue with pan/tilt head initialization. */
   std::unique_ptr<MX28AR_Control> mx28_ctrl(new MX28AR_Control(std::move(dyn_ctrl)));
@@ -101,13 +93,10 @@ Node::Node()
     {_pan_servo_id, get_parameter("pan_servo_initial_angle").as_double()},
     {_tilt_servo_id, get_parameter("tilt_servo_initial_angle").as_double()}
   };
-  if (!mx28_ctrl->setGoalPosition(INITIAL_HEAD_POSITION_deg)) {
-    RCLCPP_ERROR(get_logger(),
-                 "could not set initial position for pan (%0.2f) / tilt (%0.2f) servo.",
-                 INITIAL_HEAD_POSITION_deg.at(_pan_servo_id),
-                 INITIAL_HEAD_POSITION_deg.at(_tilt_servo_id));
-    rclcpp::shutdown();
-  }
+  CHECK(!mx28_ctrl->setGoalPosition(INITIAL_HEAD_POSITION_deg),
+        "could not set initial position for pan (%0.2f) / tilt (%0.2f) servo.",
+        INITIAL_HEAD_POSITION_deg.at(_pan_servo_id),
+        INITIAL_HEAD_POSITION_deg.at(_tilt_servo_id));
 
   std::map<Dynamixel::Id, float> actual_head_position_deg;
   CHECK(!mx28_ctrl->getPresentPosition(pan_tilt_id_vect, actual_head_position_deg), "could not read current position for pan/tilt servo.");
@@ -117,20 +106,14 @@ Node::Node()
   std::this_thread::sleep_for(std::chrono::seconds(1));
 
   static float constexpr INITIAL_ANGLE_EPSILON_deg = 2.0f;
-  if (fabs(actual_head_position_deg.at(_pan_servo_id) - INITIAL_HEAD_POSITION_deg.at(_pan_servo_id)) > INITIAL_ANGLE_EPSILON_deg) {
-    RCLCPP_ERROR(get_logger(),
-                 "could not reach initial position for pan servo, target: %0.2f, actual: %0.2f.",
-                 INITIAL_HEAD_POSITION_deg.at(_pan_servo_id),
-                 actual_head_position_deg.at(_pan_servo_id));
-    rclcpp::shutdown();
-  }
-  if (fabs(actual_head_position_deg.at(_tilt_servo_id) - INITIAL_HEAD_POSITION_deg.at(_tilt_servo_id)) > INITIAL_ANGLE_EPSILON_deg) {
-    RCLCPP_ERROR(get_logger(),
-                 "could not reach initial position for tilt servo, target: %0.2f, actual: %0.2f.",
-                 INITIAL_HEAD_POSITION_deg.at(_tilt_servo_id),
-                 actual_head_position_deg.at(_tilt_servo_id));
-    rclcpp::shutdown();
-  }
+  CHECK(fabs(actual_head_position_deg.at(_pan_servo_id) - INITIAL_HEAD_POSITION_deg.at(_pan_servo_id)) > INITIAL_ANGLE_EPSILON_deg,
+        "could not reach initial position for pan servo, target: %0.2f, actual: %0.2f.",
+        INITIAL_HEAD_POSITION_deg.at(_pan_servo_id),
+        actual_head_position_deg.at(_pan_servo_id));
+  CHECK(fabs(actual_head_position_deg.at(_tilt_servo_id) - INITIAL_HEAD_POSITION_deg.at(_tilt_servo_id)) > INITIAL_ANGLE_EPSILON_deg,
+        "could not reach initial position for tilt servo, target: %0.2f, actual: %0.2f.",
+        INITIAL_HEAD_POSITION_deg.at(_tilt_servo_id),
+        actual_head_position_deg.at(_tilt_servo_id));
 
   _head_ctrl.reset(new Controller(std::move(mx28_ctrl), get_logger(), _pan_servo_id, _tilt_servo_id));
 
