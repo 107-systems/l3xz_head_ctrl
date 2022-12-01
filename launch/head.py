@@ -16,7 +16,11 @@ def generate_launch_description():
           {'pan_servo_id': 7},
           {'tilt_servo_id': 8},
           {'pan_servo_initial_angle': 180.0},
-          {'tilt_servo_initial_angle': 180.0}
+          {'pan_servo_min_angle': 180.0 - 35.0},
+          {'pan_servo_max_angle': 180.0 + 35.0},
+          {'tilt_servo_initial_angle': 180.0},
+          {'tilt_servo_min_angle': 180.0 - 35.0},
+          {'tilt_servo_max_angle': 180.0 + 35.0},
       ]
     )
   ])

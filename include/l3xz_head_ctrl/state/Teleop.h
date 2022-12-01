@@ -27,7 +27,13 @@ namespace l3xz::head::state
 class Teleop : public StateBase
 {
 public:
-  Teleop(rclcpp::Logger const logger, dynamixelplusplus::Dynamixel::Id const pan_servo_id, dynamixelplusplus::Dynamixel::Id const tilt_servo_id);
+  Teleop(rclcpp::Logger const logger,
+         dynamixelplusplus::Dynamixel::Id const pan_servo_id,
+         dynamixelplusplus::Dynamixel::Id const tilt_servo_id,
+         float const pan_min_angle_deg,
+         float const pan_max_angle_deg,
+         float const tilt_min_angle_deg,
+         float const tilt_max_angle_deg);
   virtual ~Teleop() { }
 
 

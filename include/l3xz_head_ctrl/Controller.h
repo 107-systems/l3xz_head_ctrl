@@ -33,7 +33,11 @@ public:
    Controller(std::unique_ptr<mx28ar::MX28AR_Control> && mx28_ctrl,
               rclcpp::Logger const logger,
               dynamixelplusplus::Dynamixel::Id const pan_servo_id,
-              dynamixelplusplus::Dynamixel::Id const tilt_servo_id);
+              dynamixelplusplus::Dynamixel::Id const tilt_servo_id,
+              float const pan_min_angle_deg,
+              float const pan_max_angle_deg,
+              float const tilt_min_angle_deg,
+              float const tilt_max_angle_deg);
   ~Controller();
 
 

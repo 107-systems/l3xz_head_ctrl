@@ -34,8 +34,14 @@ using namespace mx28ar;
  * CTOR/DTOR
  **************************************************************************************/
 
-Teleop::Teleop(rclcpp::Logger const logger, dynamixelplusplus::Dynamixel::Id const pan_servo_id, dynamixelplusplus::Dynamixel::Id const tilt_servo_id)
-: StateBase(logger, pan_servo_id, tilt_servo_id)
+Teleop::Teleop(rclcpp::Logger const logger,
+               dynamixelplusplus::Dynamixel::Id const pan_servo_id,
+               dynamixelplusplus::Dynamixel::Id const tilt_servo_id,
+               float const pan_min_angle_deg,
+               float const pan_max_angle_deg,
+               float const tilt_min_angle_deg,
+               float const tilt_max_angle_deg)
+: StateBase(logger, pan_servo_id, tilt_servo_id, pan_min_angle_deg, pan_max_angle_deg, tilt_min_angle_deg, tilt_max_angle_deg)
 , _goal_velocity_rpm
 {
   {_pan_servo_id,  0.0f},
@@ -76,18 +82,13 @@ StateBase * Teleop::update(MX28AR_Control & mx28_ctrl, float const pan_angular_v
   CHECK(!actual_head_position_deg.count(_pan_servo_id), "could no position data for pan servo.");
   CHECK(!actual_head_position_deg.count(_tilt_servo_id), "could no position data for tilt servo.");
 
-  static float constexpr MIN_ANGLE_PAN_deg  = 180.0f - 35.0f;
-  static float constexpr MAX_ANGLE_PAN_deg  = 180.0f + 35.0f;
-  static float constexpr MIN_ANGLE_TILT_deg = 180.0f - 35.0f;
-  static float constexpr MAX_ANGLE_TILT_deg = 180.0f + 35.0f;
-
-  if ((actual_head_position_deg.at(_pan_servo_id) < MIN_ANGLE_PAN_deg) && (pan_angular_velocity_dps < 0.0f))
+  if ((actual_head_position_deg.at(_pan_servo_id) < _pan_min_angle_deg) && (pan_angular_velocity_dps < 0.0f))
     _goal_velocity_rpm[_pan_servo_id] = 0.0f;
-  if ((actual_head_position_deg.at(_pan_servo_id) > MAX_ANGLE_PAN_deg) && (pan_angular_velocity_dps > 0.0f))
+  if ((actual_head_position_deg.at(_pan_servo_id) > _pan_max_angle_deg) && (pan_angular_velocity_dps > 0.0f))
     _goal_velocity_rpm[_pan_servo_id] = 0.0f;
-  if ((actual_head_position_deg.at(_tilt_servo_id) < MIN_ANGLE_TILT_deg) && (tilt_angular_velocity_dps < 0.0f))
+  if ((actual_head_position_deg.at(_tilt_servo_id) < _tilt_min_angle_deg) && (tilt_angular_velocity_dps < 0.0f))
     _goal_velocity_rpm[_tilt_servo_id] = 0.0f;
-  if ((actual_head_position_deg.at(_tilt_servo_id) > MAX_ANGLE_TILT_deg) && (tilt_angular_velocity_dps > 0.0f))
+  if ((actual_head_position_deg.at(_tilt_servo_id) > _tilt_max_angle_deg) && (tilt_angular_velocity_dps > 0.0f))
     _goal_velocity_rpm[_tilt_servo_id] = 0.0f;
 
   /* Write the computed RPM value to the Dynamixel MX-28AR

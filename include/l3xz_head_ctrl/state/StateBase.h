@@ -31,11 +31,21 @@ namespace l3xz::head::state
 class StateBase
 {
 public:
-  StateBase(rclcpp::Logger const logger, dynamixelplusplus::Dynamixel::Id const pan_servo_id, dynamixelplusplus::Dynamixel::Id const tilt_servo_id)
+  StateBase(rclcpp::Logger const logger,
+            dynamixelplusplus::Dynamixel::Id const pan_servo_id,
+            dynamixelplusplus::Dynamixel::Id const tilt_servo_id,
+            float const pan_min_angle_deg,
+            float const pan_max_angle_deg,
+            float const tilt_min_angle_deg,
+            float const tilt_max_angle_deg)
   : _logger{logger}
   , _pan_servo_id{pan_servo_id}
   , _tilt_servo_id{tilt_servo_id}
   , _pan_tilt_id_vect{_pan_servo_id, _tilt_servo_id}
+  , _pan_min_angle_deg{pan_min_angle_deg}
+  , _pan_max_angle_deg{pan_max_angle_deg}
+  , _tilt_min_angle_deg{tilt_min_angle_deg}
+  , _tilt_max_angle_deg{tilt_max_angle_deg}
   { }
   virtual ~StateBase() { }
 
@@ -50,6 +60,10 @@ protected:
   dynamixelplusplus::Dynamixel::Id const _pan_servo_id;
   dynamixelplusplus::Dynamixel::Id const _tilt_servo_id;
   dynamixelplusplus::Dynamixel::IdVect const _pan_tilt_id_vect;
+  float const _pan_min_angle_deg;
+  float const _pan_max_angle_deg;
+  float const _tilt_min_angle_deg;
+  float const _tilt_max_angle_deg;
 };
 
 /**************************************************************************************

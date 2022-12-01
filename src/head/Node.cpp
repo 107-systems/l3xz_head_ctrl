@@ -51,7 +51,11 @@ Node::Node()
   declare_parameter("pan_servo_id", DEFAULT_PAN_SERVO_ID);
   declare_parameter("tilt_servo_id", DEFAULT_TILT_SERVO_ID);
   declare_parameter("pan_servo_initial_angle", DEFAULT_PAN_SERVO_INITIAL_ANGLE);
+  declare_parameter("pan_servo_min_angle", DEFAULT_PAN_SERVO_MIN_ANGLE);
+  declare_parameter("pan_servo_max_angle", DEFAULT_PAN_SERVO_MAX_ANGLE);
   declare_parameter("tilt_servo_initial_angle", DEFAULT_TILT_SERVO_INITIAL_ANGLE);
+  declare_parameter("tilt_servo_min_angle", DEFAULT_TILT_SERVO_MIN_ANGLE);
+  declare_parameter("tilt_servo_max_angle", DEFAULT_TILT_SERVO_MAX_ANGLE);
 
   std::string const serial_port  = get_parameter("serial_port").as_string();
   int const serial_port_baudrate = get_parameter("serial_port_baudrate").as_int();
@@ -123,7 +127,14 @@ Node::Node()
         actual_head_position_deg.at(_tilt_servo_id));
 
 
-  _head_ctrl.reset(new Controller(std::move(mx28_ctrl), get_logger(), _pan_servo_id, _tilt_servo_id));
+  _head_ctrl.reset(new Controller(std::move(mx28_ctrl),
+                                  get_logger(),
+                                  _pan_servo_id,
+                                  _tilt_servo_id,
+                                  get_parameter("pan_servo_min_angle").as_double(),
+                                  get_parameter("pan_servo_max_angle").as_double(),
+                                  get_parameter("tilt_servo_min_angle").as_double(),
+                                  get_parameter("tilt_servo_max_angle").as_double()));
 
   /* Configure subscribers and publishers. */
 
