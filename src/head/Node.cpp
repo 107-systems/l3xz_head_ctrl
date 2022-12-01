@@ -41,8 +41,8 @@ Node::Node()
 , _head_ctrl{}
 , _pan_servo_id{DEFAULT_PAN_SERVO_ID}
 , _tilt_servo_id{DEFAULT_TILT_SERVO_ID}
-, _pan_angular_velocity{0.0f}
-, _tilt_angular_velocity{0.0f}
+, _pan_angular_velocity_dps{0.0f}
+, _tilt_angular_velocity_dps{0.0f}
 {
   /* Configure the Dynamixel MX-28AR servos of the pan/tilt head. */
 
@@ -131,8 +131,8 @@ Node::Node()
     ("/l3xz/cmd_vel_head", 10,
     [this](geometry_msgs::msg::Twist::SharedPtr const msg)
     {
-      _pan_angular_velocity  = msg->angular.z;
-      _tilt_angular_velocity = msg->angular.y;
+      _pan_angular_velocity_dps  = msg->angular.z;
+      _tilt_angular_velocity_dps = msg->angular.y;
     });
 
   /* Configure periodic control loop function. */
@@ -141,7 +141,7 @@ Node::Node()
     (std::chrono::milliseconds(50),
      [this]()
      {
-       _head_ctrl->update(_pan_angular_velocity, _tilt_angular_velocity);
+       _head_ctrl->update(_pan_angular_velocity_dps, _tilt_angular_velocity_dps);
      });
 
   RCLCPP_INFO(get_logger(), "node initialization complete.");

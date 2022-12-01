@@ -62,15 +62,14 @@ void Teleop::onExit(MX28AR_Control & /* mx28_ctrl */)
 
 }
 
-StateBase * Teleop::update(MX28AR_Control & mx28_ctrl, float const /* pan_angular_velocity */, float const /* tilt_angular_velocity */)
+StateBase * Teleop::update(MX28AR_Control & mx28_ctrl, float const pan_angular_velocity_dps, float const tilt_angular_velocity_dps)
 {
-  /* TODO: Set desired velocity AND limit angles. */
-  float pan_rpm = -10.0f;
-  float tilt_rpm = -10.0f;
+  static float constexpr DPS_per_RPM = 360.0f / 60.0f;
+  _goal_velocity_rpm[_pan_servo_id]  = pan_angular_velocity_dps / DPS_per_RPM;
+  _goal_velocity_rpm[_tilt_servo_id] = tilt_angular_velocity_dps / DPS_per_RPM;
 
   /* Checking current head position and stopping if either
-   * pan or tilt angle would exceed the maximum allowed
-   * angle.
+   * pan or tilt angle would exceed the maximum allowed angle.
    */
   std::map<Dynamixel::Id, float> actual_head_position_deg;
   CHECK(!mx28_ctrl.getPresentPosition(_pan_tilt_id_vect, actual_head_position_deg), "could not read current position for pan/tilt servo.");
@@ -83,18 +82,16 @@ StateBase * Teleop::update(MX28AR_Control & mx28_ctrl, float const /* pan_angula
   static float constexpr MAX_ANGLE_TILT_deg = 180.0f + 35.0f;
 
   if ((actual_head_position_deg.at(_pan_servo_id) < MIN_ANGLE_PAN_deg) || (actual_head_position_deg.at(_pan_servo_id) > MAX_ANGLE_PAN_deg))
-    pan_rpm = 0.0f;
+    _goal_velocity_rpm[_pan_servo_id] = 0.0f;
   if ((actual_head_position_deg.at(_tilt_servo_id) < MIN_ANGLE_TILT_deg) || (actual_head_position_deg.at(_tilt_servo_id) > MAX_ANGLE_TILT_deg))
-    tilt_rpm = 0.0f;
+    _goal_velocity_rpm[_tilt_servo_id] = 0.0f;
 
   /* Write the computed RPM value to the Dynamixel MX-28AR
-   * servos.
+   * servos of the pan/tilt head.
    */
-  _goal_velocity_rpm[_pan_servo_id] = pan_rpm;
-  _goal_velocity_rpm[_tilt_servo_id] = tilt_rpm;
   CHECK(!mx28_ctrl.setGoalVelocity(_goal_velocity_rpm), "could not set pan/tilt servo velocity.");
 
-  RCLCPP_INFO(_logger, "pan_rpm = %0.2f, tilt_rpm = %0.2f", pan_rpm, tilt_rpm);
+  RCLCPP_INFO(_logger, "pan_rpm = %0.2f, tilt_rpm = %0.2f", _goal_velocity_rpm[_pan_servo_id], _goal_velocity_rpm[_tilt_servo_id]);
 
   return this;
 }

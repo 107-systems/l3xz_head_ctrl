@@ -44,9 +44,9 @@ Controller::~Controller()
  * PUBLIC MEMBER FUNCTIONS
  **************************************************************************************/
 
-void Controller::update(float const pan_angular_velocity, float const tilt_angular_velocity)
+void Controller::update(float const pan_angular_velocity_dps, float const tilt_angular_velocity_dps)
 {
-  auto next_head_state = _head_state->update(*_mx28_ctrl, pan_angular_velocity, tilt_angular_velocity);
+  auto next_head_state = _head_state->update(*_mx28_ctrl, pan_angular_velocity_dps, tilt_angular_velocity_dps);
     
   if (next_head_state != _head_state)
   {

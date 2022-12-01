@@ -42,7 +42,7 @@ public:
 
   virtual void onEnter(mx28ar::MX28AR_Control & mx28_ctrl) = 0;
   virtual void onExit(mx28ar::MX28AR_Control & mx28_ctrl) = 0;
-  virtual StateBase * update(mx28ar::MX28AR_Control & mx28_ctrl, float const pan_angular_velocity, float const tilt_angular_velocity) = 0;
+  virtual StateBase * update(mx28ar::MX28AR_Control & mx28_ctrl, float const pan_angular_velocity_dps, float const tilt_angular_velocity_dps) = 0;
 
 
 protected:
