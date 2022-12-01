@@ -45,11 +45,13 @@ jobs:
       with:
         repository: '107-systems/l3xz_teleop'
         path: 'ros2_ws/src/l3xz_teleop'
-        
+
     - uses: actions/checkout@v3
       with:
         path: 'ros2_ws/src/l3xz_teleop'
-        
+        submodules: true
+        fetch-depth: 1
+
     - name: colcon build
       run: |
         source /opt/ros/${{ matrix.ros_distro }}/setup.bash

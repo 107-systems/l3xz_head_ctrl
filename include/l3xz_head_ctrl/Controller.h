@@ -1,7 +1,7 @@
 /**
  * Copyright (c) 2022 LXRobotics GmbH.
  * Author: Alexander Entinger <alexander.entinger@lxrobotics.com>
- * Contributors: https://github.com/107-systems/l3xz_ctrl/graphs/contributors.
+ * Contributors: https://github.com/107-systems/l3xz_head_ctrl/graphs/contributors.
  */
 
 #ifndef HEAD_CONTROLLER_H_
@@ -11,9 +11,10 @@
  * INCLUDES
  **************************************************************************************/
 
+#include <memory>
+
 #include "state/StateBase.h"
-#include "HeadControllerInput.h"
-#include "HeadControllerOutput.h"
+#include "MX28AR/MX28AR_Control.h"
 
 /**************************************************************************************
  * NAMESPACE
@@ -29,12 +30,22 @@ namespace l3xz::head
 class Controller
 {
 public:
-   Controller();
+   Controller(std::unique_ptr<mx28ar::MX28AR_Control> && mx28_ctrl,
+              rclcpp::Logger const logger,
+              dynamixelplusplus::Dynamixel::Id const pan_servo_id,
+              dynamixelplusplus::Dynamixel::Id const tilt_servo_id,
+              float const pan_min_angle_deg,
+              float const pan_max_angle_deg,
+              float const tilt_min_angle_deg,
+              float const tilt_max_angle_deg);
   ~Controller();
 
-  ControllerOutput update(ControllerInput const & input, ControllerOutput const & prev_output);
+
+  void update(float const pan_angular_velocity, float const tilt_angular_velocity);
+
 
 private:
+  std::unique_ptr<mx28ar::MX28AR_Control> _mx28_ctrl;
   state::StateBase * _head_state;
 };
 

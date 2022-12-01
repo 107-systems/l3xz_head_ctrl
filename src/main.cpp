@@ -1,7 +1,7 @@
 /**
  * Copyright (c) 2022 LXRobotics GmbH.
  * Author: Alexander Entinger <alexander.entinger@lxrobotics.com>
- * Contributors: https://github.com/107-systems/l3xz_ctrl/graphs/contributors.
+ * Contributors: https://github.com/107-systems/l3xz_head_ctrl/graphs/contributors.
  */
 
 /**************************************************************************************
@@ -10,7 +10,7 @@
 
 #include <rclcpp/rclcpp.hpp>
 
-#include <l3xz_head_ctrl/HeadControlNode.h>
+#include <l3xz_head_ctrl/Node.h>
 
 /**************************************************************************************
  * MAIN
@@ -20,7 +20,7 @@ int main(int argc, char * argv[])
 {
   rclcpp::init(argc, argv);
 
-  auto node = std::make_shared<l3xz::HeadControlNode>();
+  auto node = std::make_shared<l3xz::head::Node>();
 
   try
   {

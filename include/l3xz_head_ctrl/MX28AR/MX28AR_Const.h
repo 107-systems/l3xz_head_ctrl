@@ -1,42 +1,56 @@
 /**
  * Copyright (c) 2022 LXRobotics GmbH.
  * Author: Alexander Entinger <alexander.entinger@lxrobotics.com>
- * Contributors: https://github.com/107-systems/l3xz_ctrl/graphs/contributors.
+ * Contributors: https://github.com/107-systems/l3xz_head_ctrl/graphs/contributors.
  */
 
-#ifndef HEAD_TELEOP_STATE_H_
-#define HEAD_TELEOP_STATE_H_
+#ifndef L3XZ_MX28AR_CONST_H_
+#define L3XZ_MX28AR_CONST_H_
 
 /**************************************************************************************
- * INCLUDES
+ * INCLUDE
  **************************************************************************************/
 
-#include "StateBase.h"
+#include <cstdint>
 
 /**************************************************************************************
  * NAMESPACE
  **************************************************************************************/
 
-namespace l3xz::head::state
+namespace l3xz::mx28ar
 {
 
 /**************************************************************************************
- * CLASS DECLARATION
+ * TYPEDEF
  **************************************************************************************/
 
-class Teleop : public StateBase
+enum class ControlTable : uint16_t
 {
-public:
-  virtual ~Teleop() { }
-  virtual void onEnter() override;
-  virtual void onExit() override;
-  virtual std::tuple<StateBase *, ControllerOutput> update(ControllerInput const & input, ControllerOutput const & prev_output) override;
+  OperatingMode   =  11,
+  TorqueEnable    =  64,
+  GoalVelocity    = 104,
+  GoalPosition    = 116,
+  PresentPosition = 132,
+};
+
+enum class OperatingMode : uint8_t
+{
+  VelocityControlMode         = 1,
+  PositionControlMode         = 3,
+  ExtendedPositionControlMode = 4,
+  PwmControlMode              = 16,
+};
+
+enum class TorqueEnable : uint8_t
+{
+  Off = 0,
+  On  = 1,
 };
 
 /**************************************************************************************
  * NAMESPACE
  **************************************************************************************/
 
-} /* l3xz::head::state */
+} /* l3xz::mx28ar */
 
-#endif /* HEAD_TELEOP_STATE_H_ */
+#endif /* L3XZ_MX28AR_CONST_H_ */

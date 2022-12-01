@@ -4,38 +4,33 @@ cmake_minimum_required(VERSION 3.8)
 project(l3xz_head_ctrl)
 set(L3XZ_HEAD_CTRL_TARGET ${PROJECT_NAME}_node)
 #######################################################################################
-if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-  add_compile_options(-Wall -Werror -Wextra -Wpedantic)
-endif()
-#######################################################################################
 find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(geometry_msgs REQUIRED)
-find_package(rosidl_default_generators REQUIRED)
+#######################################################################################
+add_subdirectory(external/libdynamixelplusplus)
 #######################################################################################
 include_directories(${L3XZ_HEAD_CTRL_TARGET}
   include
 )
 #######################################################################################
 add_executable(${L3XZ_HEAD_CTRL_TARGET}
-  src/head/state/Init.cpp
+  src/MX28AR/MX28AR_Control.cpp
   src/head/state/Teleop.cpp
-  src/head/HeadController.cpp
-
-  src/HeadControlNode.cpp
-
+  src/head/Controller.cpp
+  src/head/Node.cpp
   src/main.cpp
 )
 #######################################################################################
+if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+  target_compile_options(${L3XZ_HEAD_CTRL_TARGET} PRIVATE -Wall -Werror -Wextra -Wpedantic)
+endif()
+#######################################################################################
 target_compile_features(${L3XZ_HEAD_CTRL_TARGET} PRIVATE cxx_std_17)
 #######################################################################################
+target_link_libraries(${L3XZ_HEAD_CTRL_TARGET} dynamixel++)
+#######################################################################################
 ament_target_dependencies(${L3XZ_HEAD_CTRL_TARGET} rclcpp geometry_msgs)
-#######################################################################################
-rosidl_generate_interfaces(${PROJECT_NAME}
-  "msg/HeadAngle.msg"
-)
-#######################################################################################
-rosidl_target_interfaces(${L3XZ_HEAD_CTRL_TARGET} ${PROJECT_NAME} "rosidl_typesupport_cpp")
 #######################################################################################
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
