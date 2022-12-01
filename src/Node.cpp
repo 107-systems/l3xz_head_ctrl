@@ -23,6 +23,16 @@ using namespace dynamixelplusplus;
 using namespace mx28ar;
 
 /**************************************************************************************
+ * DEFINE
+ **************************************************************************************/
+
+#define CHECK(cond,err_msg)                \
+  if (cond) {                              \
+    RCLCPP_ERROR(get_logger(), (err_msg)); \
+    rclcpp::shutdown();                    \
+  }
+
+/**************************************************************************************
  * CTOR/DTOR
  **************************************************************************************/
 
@@ -82,20 +92,9 @@ Node::Node()
 
   Dynamixel::IdVect const pan_tilt_id_vect{_pan_servo_id, _tilt_servo_id};
 
-  if (!mx28_ctrl->setTorqueEnable(pan_tilt_id_vect, TorqueEnable::Off)) {
-    RCLCPP_ERROR(get_logger(), "could not disable torque for pan/tilt servos.");
-    rclcpp::shutdown();
-  }
-
-  if (!mx28_ctrl->setOperatingMode(pan_tilt_id_vect, OperatingMode::PositionControlMode)) {
-    RCLCPP_ERROR(get_logger(), "could not configure pan/tilt servos for position control mode.");
-    rclcpp::shutdown();
-  }
-
-  if (!mx28_ctrl->setTorqueEnable(pan_tilt_id_vect, TorqueEnable::On)) {
-    RCLCPP_ERROR(get_logger(), "could not enable torque for pan/tilt servos.");
-    rclcpp::shutdown();
-  }
+  CHECK(!mx28_ctrl->setTorqueEnable(pan_tilt_id_vect, TorqueEnable::Off), "could not disable torque for pan/tilt servos.");
+  CHECK(!mx28_ctrl->setOperatingMode(pan_tilt_id_vect, OperatingMode::PositionControlMode), "could not configure pan/tilt servos for position control mode.");
+  CHECK(!mx28_ctrl->setTorqueEnable(pan_tilt_id_vect, TorqueEnable::On), "could not enable torque for pan/tilt servos.");
 
   std::map<Dynamixel::Id, float> const INITIAL_HEAD_POSITION_deg =
   {
@@ -111,18 +110,9 @@ Node::Node()
   }
 
   std::map<Dynamixel::Id, float> actual_head_position_deg;
-  if (!mx28_ctrl->getPresentPosition(pan_tilt_id_vect, actual_head_position_deg)) {
-    RCLCPP_ERROR(get_logger(), "could not read current position for pan/tilt servo.");
-    rclcpp::shutdown();
-  }
-  if (!actual_head_position_deg.count(_pan_servo_id)) {
-    RCLCPP_ERROR(get_logger(), "could no position data for pan servo.");
-    rclcpp::shutdown();
-  }
-  if (!actual_head_position_deg.count(_tilt_servo_id)) {
-    RCLCPP_ERROR(get_logger(), "could no position data for tilt servo.");
-    rclcpp::shutdown();
-  }
+  CHECK(!mx28_ctrl->getPresentPosition(pan_tilt_id_vect, actual_head_position_deg), "could not read current position for pan/tilt servo.");
+  CHECK(!actual_head_position_deg.count(_pan_servo_id), "could no position data for pan servo.");
+  CHECK(!actual_head_position_deg.count(_tilt_servo_id), "could no position data for tilt servo.");
 
   std::this_thread::sleep_for(std::chrono::seconds(1));
 
