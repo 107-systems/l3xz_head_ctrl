@@ -16,9 +16,9 @@ include_directories(${L3XZ_HEAD_CTRL_TARGET}
 #######################################################################################
 add_executable(${L3XZ_HEAD_CTRL_TARGET}
   src/MX28AR/MX28AR_Control.cpp
-  src/state/Teleop.cpp
-  src/Controller.cpp
-  src/Node.cpp
+  src/head/state/Teleop.cpp
+  src/head/Controller.cpp
+  src/head/Node.cpp
   src/main.cpp
 )
 #######################################################################################

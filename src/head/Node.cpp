@@ -16,7 +16,7 @@
  * NAMESPACE
  **************************************************************************************/
 
-namespace l3xz
+namespace l3xz::head
 {
 
 using namespace dynamixelplusplus;
@@ -132,7 +132,7 @@ Node::Node()
     rclcpp::shutdown();
   }
 
-  _head_ctrl.reset(new head::Controller(std::move(mx28_ctrl), get_logger(), _pan_servo_id, _tilt_servo_id));
+  _head_ctrl.reset(new Controller(std::move(mx28_ctrl), get_logger(), _pan_servo_id, _tilt_servo_id));
 
   /* Configure subscribers and publishers. */
 
@@ -165,4 +165,4 @@ void Node::onCtrlLoopTimerEvent()
  * NAMESPACE
  **************************************************************************************/
 
-} /* l3xz */
+} /* l3xz::head */

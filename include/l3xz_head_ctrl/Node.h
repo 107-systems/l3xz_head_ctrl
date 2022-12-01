@@ -23,7 +23,7 @@
  * NAMESPACE
  **************************************************************************************/
 
-namespace l3xz
+namespace l3xz::head
 {
 
 /**************************************************************************************
@@ -36,7 +36,7 @@ public:
   Node();
 
 private:
-  std::unique_ptr<head::Controller> _head_ctrl;
+  std::unique_ptr<Controller> _head_ctrl;
   dynamixelplusplus::Dynamixel::Id _pan_servo_id, _tilt_servo_id;
   float _pan_angular_velocity, _tilt_angular_velocity;
 
@@ -58,6 +58,6 @@ private:
  * NAMESPACE
  **************************************************************************************/
 
-} /* l3xz */
+} /* l3xz::head */
 
 #endif /* L3XZ_HEAD_CTRL_NODE_H_ */
