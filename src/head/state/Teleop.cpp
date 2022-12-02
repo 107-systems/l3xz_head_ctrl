@@ -68,8 +68,11 @@ void Teleop::onExit(MX28AR_Control & /* mx28_ctrl */)
 
 }
 
-StateBase * Teleop::update(MX28AR_Control & mx28_ctrl, float const pan_angular_velocity_dps, float const tilt_angular_velocity_dps)
+StateBase * Teleop::update(MX28AR_Control & mx28_ctrl, float const pan_angular_velocity_rad_per_sec, float const tilt_angular_velocity_rad_per_sec)
 {
+  float const pan_angular_velocity_dps  = pan_angular_velocity_rad_per_sec  * 180.0f / M_PI;
+  float const tilt_angular_velocity_dps = tilt_angular_velocity_rad_per_sec * 180.0f / M_PI;
+
   static float constexpr DPS_per_RPM = 360.0f / 60.0f;
   _goal_velocity_rpm[_pan_servo_id]  = pan_angular_velocity_dps / DPS_per_RPM;
   _goal_velocity_rpm[_tilt_servo_id] = tilt_angular_velocity_dps / DPS_per_RPM;
