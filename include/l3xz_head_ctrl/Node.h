@@ -38,7 +38,7 @@ public:
 private:
   std::unique_ptr<Controller> _head_ctrl;
   dynamixelplusplus::Dynamixel::Id _pan_servo_id, _tilt_servo_id;
-  float _pan_angular_velocity_dps, _tilt_angular_velocity_dps;
+  float _pan_angular_velocity_rad_per_sec, _tilt_angular_velocity_rad_per_sec;
 
   rclcpp::Subscription<geometry_msgs::msg::Twist>::SharedPtr _head_sub;
   rclcpp::TimerBase::SharedPtr _ctrl_loop_timer;

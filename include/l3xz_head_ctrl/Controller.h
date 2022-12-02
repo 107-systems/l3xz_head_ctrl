@@ -41,7 +41,7 @@ public:
   ~Controller();
 
 
-  void update(float const pan_angular_velocity, float const tilt_angular_velocity);
+  void update(float const pan_angular_velocity_rad_per_sec, float const tilt_angular_velocity_rad_per_sec);
 
 
 private:

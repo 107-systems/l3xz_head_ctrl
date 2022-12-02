@@ -39,7 +39,7 @@ public:
 
   virtual void onEnter(mx28ar::MX28AR_Control & mx28_ctrl) override;
   virtual void onExit(mx28ar::MX28AR_Control & mx28_ctrl) override;
-  virtual StateBase * update(mx28ar::MX28AR_Control & mx28_ctrl, float const pan_angular_velocity_dps, float const tilt_angular_velocity_dps) override;
+  virtual StateBase * update(mx28ar::MX28AR_Control & mx28_ctrl, float const pan_angular_velocity_rad_per_sec, float const tilt_angular_velocity_rad_per_sec) override;
 
 private:
   std::map<dynamixelplusplus::Dynamixel::Id, float> _goal_velocity_rpm;
