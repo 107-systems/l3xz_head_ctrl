@@ -13,7 +13,7 @@
 
 #include <rclcpp/rclcpp.hpp>
 
-#include <dynamixel++/Dynamixel++.h>
+#include <dynamixel++/dynamixel++.h>
 
 #include <l3xz_head_ctrl/MX28AR/MX28AR_Control.h>
 

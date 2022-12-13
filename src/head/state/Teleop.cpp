@@ -21,16 +21,6 @@ using namespace dynamixelplusplus;
 using namespace mx28ar;
 
 /**************************************************************************************
- * DEFINE
- **************************************************************************************/
-
-#define CHECK(cond,err_msg)           \
-  if (cond) {                         \
-    RCLCPP_ERROR(_logger, (err_msg)); \
-    rclcpp::shutdown();               \
-  }
-
-/**************************************************************************************
  * CTOR/DTOR
  **************************************************************************************/
 
@@ -57,10 +47,10 @@ Teleop::Teleop(rclcpp::Logger const logger,
 
 void Teleop::onEnter(MX28AR_Control & mx28_ctrl)
 {
-  CHECK(!mx28_ctrl.setTorqueEnable(_pan_tilt_id_vect, TorqueEnable::Off), "could not disable torque for pan/tilt servos.");
-  CHECK(!mx28_ctrl.setOperatingMode(_pan_tilt_id_vect, OperatingMode::VelocityControlMode), "could not configure pan/tilt servos for velocity control mode.");
-  CHECK(!mx28_ctrl.setTorqueEnable(_pan_tilt_id_vect, TorqueEnable::On), "could not enable torque for pan/tilt servos.");
-  CHECK(!mx28_ctrl.setGoalVelocity(_goal_velocity_rpm), "could not set initial pan/tilt servo velocity.");
+  mx28_ctrl.setTorqueEnable (TorqueEnable::Off);
+  mx28_ctrl.setOperatingMode(OperatingMode::VelocityControlMode);
+  mx28_ctrl.setTorqueEnable (TorqueEnable::On);
+  mx28_ctrl.setGoalVelocity (0.0, 0.0);
 }
 
 void Teleop::onExit(MX28AR_Control & /* mx28_ctrl */)
@@ -80,24 +70,21 @@ StateBase * Teleop::update(MX28AR_Control & mx28_ctrl, float const pan_angular_v
   /* Checking current head position and stopping if either
    * pan or tilt angle would exceed the maximum allowed angle.
    */
-  std::map<Dynamixel::Id, float> actual_head_position_deg;
-  CHECK(!mx28_ctrl.getPresentPosition(_pan_tilt_id_vect, actual_head_position_deg), "could not read current position for pan/tilt servo.");
-  CHECK(!actual_head_position_deg.count(_pan_servo_id), "could no position data for pan servo.");
-  CHECK(!actual_head_position_deg.count(_tilt_servo_id), "could no position data for tilt servo.");
+  auto [pan_angle_deg, tilt_angle_deg] = mx28_ctrl.getPresentPosition();
 
-  if ((actual_head_position_deg.at(_pan_servo_id) < _pan_min_angle_deg) && (pan_angular_velocity_dps < 0.0f))
+  if ((pan_angle_deg < _pan_min_angle_deg) && (pan_angular_velocity_dps < 0.0f))
     _goal_velocity_rpm[_pan_servo_id] = 0.0f;
-  if ((actual_head_position_deg.at(_pan_servo_id) > _pan_max_angle_deg) && (pan_angular_velocity_dps > 0.0f))
+  if ((pan_angle_deg > _pan_max_angle_deg) && (pan_angular_velocity_dps > 0.0f))
     _goal_velocity_rpm[_pan_servo_id] = 0.0f;
-  if ((actual_head_position_deg.at(_tilt_servo_id) < _tilt_min_angle_deg) && (tilt_angular_velocity_dps < 0.0f))
+  if ((tilt_angle_deg < _tilt_min_angle_deg) && (tilt_angular_velocity_dps < 0.0f))
     _goal_velocity_rpm[_tilt_servo_id] = 0.0f;
-  if ((actual_head_position_deg.at(_tilt_servo_id) > _tilt_max_angle_deg) && (tilt_angular_velocity_dps > 0.0f))
+  if ((tilt_angle_deg > _tilt_max_angle_deg) && (tilt_angular_velocity_dps > 0.0f))
     _goal_velocity_rpm[_tilt_servo_id] = 0.0f;
 
   /* Write the computed RPM value to the Dynamixel MX-28AR
    * servos of the pan/tilt head.
    */
-  CHECK(!mx28_ctrl.setGoalVelocity(_goal_velocity_rpm), "could not set pan/tilt servo velocity.");
+  mx28_ctrl.setGoalVelocity(_goal_velocity_rpm[_pan_servo_id], _goal_velocity_rpm[_tilt_servo_id]);
 
   return this;
 }
