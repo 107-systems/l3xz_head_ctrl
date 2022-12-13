@@ -14,7 +14,7 @@
 #include <map>
 #include <memory>
 
-#include <dynamixel++/Dynamixel++.h>
+#include <dynamixel++/dynamixel++.h>
 
 #include "MX28AR_Const.h"
 
@@ -29,19 +29,21 @@ namespace l3xz::mx28ar
  * CLASS DECLARATION
  **************************************************************************************/
 
-class MX28AR_Control
+class MX28AR_Control : private dynamixelplusplus::SyncGroup
 {
 public:
-  MX28AR_Control(std::unique_ptr<dynamixelplusplus::Dynamixel> && dyn_ctrl);
+  MX28AR_Control(dynamixelplusplus::SharedDynamixel dyn_ctrl,
+                 dynamixelplusplus::Dynamixel::Id const pan_servo_id,
+                 dynamixelplusplus::Dynamixel::Id const tilt_servo_id)
+  : dynamixelplusplus::SyncGroup{dyn_ctrl, dynamixelplusplus::Dynamixel::IdVect{pan_servo_id, tilt_servo_id}}
+  { }
 
-  bool setTorqueEnable(dynamixelplusplus::Dynamixel::IdVect const & id_vect, TorqueEnable const torque_enable);
-  bool setOperatingMode(dynamixelplusplus::Dynamixel::IdVect const & id_vect, OperatingMode const operating_mode);
-  bool setGoalPosition(std::map<dynamixelplusplus::Dynamixel::Id, float> const & id_angle_map);
-  bool getPresentPosition(dynamixelplusplus::Dynamixel::IdVect const & id_vect, std::map<dynamixelplusplus::Dynamixel::Id, float> & id_angle_map);
-  bool setGoalVelocity(std::map<dynamixelplusplus::Dynamixel::Id, float> const & id_rpm_map);
+  void setTorqueEnable (TorqueEnable const torque_enable);
+  void setOperatingMode(OperatingMode const operating_mode);
+  void setGoalPosition (float const pan_angle_deg, float const tilt_angle_deg);
+  void setGoalVelocity (float const pan_velocity_rpm, float const tilt_velocity_rpm);
 
-private:
-  std::unique_ptr<dynamixelplusplus::Dynamixel> _dyn_ctrl;
+  std::tuple<float, float> getPresentPosition();
 };
 
 /**************************************************************************************

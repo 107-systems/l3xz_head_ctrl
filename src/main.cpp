@@ -10,32 +10,46 @@
 
 #include <rclcpp/rclcpp.hpp>
 
+#include <dynamixel++/dynamixel++.h>
+
 #include <l3xz_head_ctrl/Node.h>
 
 /**************************************************************************************
  * MAIN
  **************************************************************************************/
 
-int main(int argc, char * argv[])
+int main(int argc, char * argv[]) try
 {
   rclcpp::init(argc, argv);
 
   auto node = std::make_shared<l3xz::head::Node>();
 
-  try
-  {
-    rclcpp::spin(node);
-    rclcpp::shutdown();
-    return EXIT_SUCCESS;
-  }
-  catch (std::runtime_error const & err)
-  {
-    RCLCPP_ERROR(rclcpp::get_logger(node->get_name()), "Exception (std::runtime_error) caught: %s\nTerminating ...", err.what());
-    return EXIT_FAILURE;
-  }
-  catch (...)
-  {
-    RCLCPP_ERROR(rclcpp::get_logger(node->get_name()), "Unhandled exception caught.\nTerminating ...");
-    return EXIT_FAILURE;
-  }
+  rclcpp::spin(node);
+  rclcpp::shutdown();
+
+  return EXIT_SUCCESS;
+}
+catch (dynamixelplusplus::CommunicationError const & e)
+{
+  std::cerr << "CommunicationError caught: " << e.what() << std::endl;
+  std::cerr << "Terminating ..." << std::endl;
+  return EXIT_FAILURE;
+}
+catch (dynamixelplusplus::StatusError const & e)
+{
+  std::cerr << "StatusError caught: " << e.what() << std::endl;
+  std::cerr << "Terminating ..." << std::endl;
+  return EXIT_FAILURE;
+}
+catch (std::runtime_error const & err)
+{
+  std::cerr << "Exception (std::runtime_error) caught: " << err.what() << std::endl;
+  std::cerr << "Terminating ..." << std::endl;
+  return EXIT_FAILURE;
+}
+catch (...)
+{
+  std::cerr << "Unhandled exception caught." << std::endl;
+  std::cerr << "Terminating ..." << std::endl;
+  return EXIT_FAILURE;
 }

@@ -10,6 +10,8 @@
 
 #include <l3xz_head_ctrl/MX28AR/MX28AR_Control.h>
 
+#include <assert.h>
+
 /**************************************************************************************
  * NAMESPACE
  **************************************************************************************/
@@ -20,89 +22,62 @@ namespace l3xz::mx28ar
 using namespace dynamixelplusplus;
 
 /**************************************************************************************
- * CTOR/DTOR
- **************************************************************************************/
-
-MX28AR_Control::MX28AR_Control(std::unique_ptr<Dynamixel> && dyn_ctrl)
-: _dyn_ctrl(std::move(dyn_ctrl))
-{
-
-}
-
-/**************************************************************************************
  * PUBLIC MEMBER FUNCTIONS
  **************************************************************************************/
 
-bool MX28AR_Control::setTorqueEnable(Dynamixel::IdVect const & id_vect, TorqueEnable const torque_enable)
+void MX28AR_Control::setTorqueEnable(TorqueEnable const torque_enable)
 {
-  std::map<Dynamixel::Id, uint8_t> torque_enable_data_map;
-
-  for (auto id : id_vect)
-    torque_enable_data_map[id] = static_cast<uint8_t>(torque_enable);
-
-  return (_dyn_ctrl->syncWrite(static_cast<uint16_t>(ControlTable::TorqueEnable), torque_enable_data_map) == Dynamixel::Error::None);
+  write(static_cast<uint16_t>(ControlTable::TorqueEnable), static_cast<uint8_t>(torque_enable));
 }
 
-bool MX28AR_Control::setOperatingMode(Dynamixel::IdVect const & id_vect, OperatingMode const operating_mode)
+void MX28AR_Control::setOperatingMode(OperatingMode const operating_mode)
 {
-  std::map<Dynamixel::Id, uint8_t> op_mode_data_map;
-
-  for (auto id : id_vect)
-    op_mode_data_map[id] = static_cast<uint8_t>(operating_mode);
-
-  return (_dyn_ctrl->syncWrite(static_cast<uint16_t>(ControlTable::OperatingMode), op_mode_data_map) == Dynamixel::Error::None);
+  write(static_cast<uint16_t>(ControlTable::OperatingMode), static_cast<uint8_t>(operating_mode));
 }
 
-bool MX28AR_Control::setGoalPosition(std::map<Dynamixel::Id, float> const & id_angle_map)
+void MX28AR_Control::setGoalPosition(float const pan_angle_deg, float const tilt_angle_deg)
 {
-  std::map<Dynamixel::Id, uint32_t> goal_position_data_map;
+  auto isValidAngle = [](float const angle_deg) { return (angle_deg >= 0.0f && angle_deg <= 360.0f); };
+  assert(isValidAngle(pan_angle_deg));
+  assert(isValidAngle(tilt_angle_deg));
 
-  for (auto [id, angle_deg] : id_angle_map)
-  {
-    auto isValidAngle = [](float const a) { return (a >= 0.0f && a <= 360.0f); };
-    if (!isValidAngle(angle_deg))
-      return false;
-    goal_position_data_map[id] = static_cast<uint32_t>((angle_deg * 4096.0f) / 360.0f);
-  }
-
-  return (_dyn_ctrl->syncWrite(static_cast<uint16_t>(ControlTable::GoalPosition), goal_position_data_map) == Dynamixel::Error::None);
+  auto toRegValue = [](float const angle_deg) { return static_cast<uint32_t>((angle_deg * 4096.0f) / 360.0f); };
+  std::vector<uint32_t> const raw_goal_position_vect{toRegValue(pan_angle_deg), toRegValue(tilt_angle_deg)};
+  write(static_cast<uint16_t>(ControlTable::GoalPosition), raw_goal_position_vect);
 }
 
-bool MX28AR_Control::getPresentPosition(Dynamixel::IdVect const & id_vect, std::map<Dynamixel::Id, float> & id_angle_map)
+void MX28AR_Control::setGoalVelocity(float const pan_velocity_rpm, float const tilt_velocity_rpm)
 {
-  std::map<Dynamixel::Id, uint32_t> id_angle_raw_map;
-  if (_dyn_ctrl->syncRead(static_cast<uint16_t>(ControlTable::PresentPosition), id_vect, id_angle_raw_map) != Dynamixel::Error::None)
-    return false;
-
-  for (auto [id, angle_raw] : id_angle_raw_map)
-    id_angle_map[id] = static_cast<float>(angle_raw) * 360.0f / 4096.0f;
-
-  return true;
-}
-
-bool MX28AR_Control::setGoalVelocity(std::map<dynamixelplusplus::Dynamixel::Id, float> const & id_rpm_map)
-{
-  std::map<Dynamixel::Id, uint32_t> goal_velocity_data_map;
-
   static float const RPM_per_LSB = 0.229f;
   static float const MAX_VELOCITY_rpm = RPM_per_LSB * 1023.0f;
   static float const MIN_VELOCITY_rpm = RPM_per_LSB * 1023.0f * (-1.0);
 
   auto limit_velocity = [](float const rpm)
   {
-         if (rpm < MIN_VELOCITY_rpm) return MIN_VELOCITY_rpm;
+    if (rpm < MIN_VELOCITY_rpm)      return MIN_VELOCITY_rpm;
     else if (rpm > MAX_VELOCITY_rpm) return MAX_VELOCITY_rpm;
     else                             return rpm;
   };
 
-  for (auto [id, rpm] : id_rpm_map)
+  auto toRegValue = [](float const rpm)
   {
-    auto const rpm_limited = limit_velocity(rpm);
-    int32_t const rpm_lsb_signed = static_cast<int32_t>(rpm_limited / RPM_per_LSB);
-    goal_velocity_data_map[id] = static_cast<uint32_t>(rpm_lsb_signed);
-  }
+    int32_t const rpm_lsb_signed = static_cast<int32_t>(rpm / RPM_per_LSB);
+    return static_cast<uint32_t>(rpm_lsb_signed);
+  };
 
-  return (_dyn_ctrl->syncWrite(static_cast<uint16_t>(ControlTable::GoalVelocity), goal_velocity_data_map) == Dynamixel::Error::None);
+  std::vector<uint32_t> const raw_goal_velocity_vect{toRegValue(limit_velocity(pan_velocity_rpm)),
+                                                     toRegValue(limit_velocity(tilt_velocity_rpm))};
+  write(static_cast<uint16_t>(ControlTable::GoalVelocity), raw_goal_velocity_vect);
+}
+
+std::tuple<float, float> MX28AR_Control::getPresentPosition()
+{
+  std::vector<uint32_t> const angle_raw_vect = read<uint32_t>(static_cast<uint16_t>(ControlTable::PresentPosition));
+
+  auto fromRegValue = [](uint32_t const angle_raw) { return static_cast<float>(angle_raw) * 360.0f / 4096.0f; };
+
+  return std::make_tuple(fromRegValue(angle_raw_vect.at(0)),
+                         fromRegValue(angle_raw_vect.at(1)));
 }
 
 /**************************************************************************************
