@@ -17,7 +17,7 @@
 
 #include <geometry_msgs/msg/twist.hpp>
 
-#include "Controller.h"
+#include <l3xz_io_dynamixel/msg/head_velocity.hpp>
 
 /**************************************************************************************
  * NAMESPACE
@@ -36,22 +36,19 @@ public:
   Node();
 
 private:
-  std::unique_ptr<Controller> _head_ctrl;
-  dynamixelplusplus::Dynamixel::Id _pan_servo_id, _tilt_servo_id;
   float _pan_angular_velocity_rad_per_sec, _tilt_angular_velocity_rad_per_sec;
 
+  enum class State
+  {
+    Teleop,
+  };
+  State _state;
+
   rclcpp::Subscription<geometry_msgs::msg::Twist>::SharedPtr _head_sub;
+  rclcpp::Publisher<l3xz_io_dynamixel::msg::HeadVelocity>::SharedPtr _head_io_pub;
   rclcpp::TimerBase::SharedPtr _ctrl_loop_timer;
 
-  static int                              constexpr DEFAULT_SERIAL_BAUDRATE          = 115200;
-  static dynamixelplusplus::Dynamixel::Id constexpr DEFAULT_PAN_SERVO_ID             = 7;
-  static dynamixelplusplus::Dynamixel::Id constexpr DEFAULT_TILT_SERVO_ID            = 8;
-  static float                            constexpr DEFAULT_PAN_SERVO_INITIAL_ANGLE  = 180.0f;
-  static float                            constexpr DEFAULT_PAN_SERVO_MIN_ANGLE      = DEFAULT_PAN_SERVO_INITIAL_ANGLE - 10.f;
-  static float                            constexpr DEFAULT_PAN_SERVO_MAX_ANGLE      = DEFAULT_PAN_SERVO_INITIAL_ANGLE + 10.f;
-  static float                            constexpr DEFAULT_TILT_SERVO_INITIAL_ANGLE = 180.0f;
-  static float                            constexpr DEFAULT_TILT_SERVO_MIN_ANGLE     = DEFAULT_TILT_SERVO_INITIAL_ANGLE - 10.f;
-  static float                            constexpr DEFAULT_TILT_SERVO_MAX_ANGLE     = DEFAULT_TILT_SERVO_INITIAL_ANGLE + 10.f;
+  void ctrl_loop();
 };
 
 /**************************************************************************************

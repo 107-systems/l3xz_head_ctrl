@@ -43,14 +43,14 @@ jobs:
         
     - uses: actions/checkout@v3
       with:
-        repository: '107-systems/l3xz_teleop'
-        path: 'ros2_ws/src/l3xz_teleop'
+        repository: '107-systems/l3xz_io_dynamixel'
+        path: 'ros2_ws/src/l3xz_io_dynamixel'
+        submodules: true
+        fetch-depth: 1
 
     - uses: actions/checkout@v3
       with:
-        path: 'ros2_ws/src/l3xz_teleop'
-        submodules: true
-        fetch-depth: 1
+        path: 'ros2_ws/src/l3xz_head_ctrl'
 
     - name: colcon build
       run: |

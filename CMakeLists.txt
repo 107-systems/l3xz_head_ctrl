@@ -7,18 +7,14 @@ set(L3XZ_HEAD_CTRL_TARGET ${PROJECT_NAME}_node)
 find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(geometry_msgs REQUIRED)
-#######################################################################################
-add_subdirectory(external/libdynamixelplusplus)
+find_package(l3xz_io_dynamixel REQUIRED)
 #######################################################################################
 include_directories(${L3XZ_HEAD_CTRL_TARGET}
   include
 )
 #######################################################################################
 add_executable(${L3XZ_HEAD_CTRL_TARGET}
-  src/MX28AR/MX28AR_Control.cpp
-  src/head/state/Teleop.cpp
-  src/head/Controller.cpp
-  src/head/Node.cpp
+        src/Node.cpp
   src/main.cpp
 )
 #######################################################################################
@@ -28,9 +24,7 @@ endif()
 #######################################################################################
 target_compile_features(${L3XZ_HEAD_CTRL_TARGET} PRIVATE cxx_std_17)
 #######################################################################################
-target_link_libraries(${L3XZ_HEAD_CTRL_TARGET} dynamixel++)
-#######################################################################################
-ament_target_dependencies(${L3XZ_HEAD_CTRL_TARGET} rclcpp geometry_msgs)
+ament_target_dependencies(${L3XZ_HEAD_CTRL_TARGET} rclcpp geometry_msgs l3xz_io_dynamixel)
 #######################################################################################
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
