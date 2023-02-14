@@ -11,6 +11,7 @@
  * INCLUDE
  **************************************************************************************/
 
+#include <chrono>
 #include <memory>
 
 #include <rclcpp/rclcpp.hpp>
@@ -48,6 +49,8 @@ private:
   rclcpp::Publisher<l3xz_io_dynamixel::msg::HeadVelocity>::SharedPtr _head_io_pub;
   rclcpp::TimerBase::SharedPtr _ctrl_loop_timer;
 
+  std::chrono::steady_clock::time_point _prev_ctrl_loop_timepoint;
+  static std::chrono::milliseconds constexpr CTRL_LOOP_RATE{10};
   void ctrl_loop();
 };
 
