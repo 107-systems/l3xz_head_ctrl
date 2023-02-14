@@ -26,6 +26,7 @@ Node::Node()
 , _pan_angular_velocity_rad_per_sec{0.0f}
 , _tilt_angular_velocity_rad_per_sec{0.0f}
 , _state{State::Teleop}
+, _prev_ctrl_loop_timepoint{std::chrono::steady_clock::now()}
 {
   /* Configure subscribers and publishers. */
 
@@ -42,7 +43,7 @@ Node::Node()
   /* Configure periodic control loop function. */
 
   _ctrl_loop_timer = create_wall_timer
-    (std::chrono::milliseconds(50),
+    (std::chrono::milliseconds(CTRL_LOOP_RATE.count()),
      [this]()
      {
        this->ctrl_loop();
@@ -57,6 +58,18 @@ Node::Node()
 
 void Node::ctrl_loop()
 {
+  auto const now = std::chrono::steady_clock::now();
+  auto const ctrl_loop_rate = (now - _prev_ctrl_loop_timepoint);
+  if (ctrl_loop_rate > (CTRL_LOOP_RATE + std::chrono::milliseconds(1)))
+    RCLCPP_WARN_THROTTLE(get_logger(),
+                         *get_clock(),
+                         1000,
+                         "ctrl_loop should be called every %ld ms, but is %ld ms instead",
+                         CTRL_LOOP_RATE.count(),
+                         std::chrono::duration_cast<std::chrono::milliseconds>(ctrl_loop_rate).count());
+  _prev_ctrl_loop_timepoint = now;
+
+
   l3xz_io_dynamixel::msg::HeadVelocity head_vel_msg;
 
   switch(_state)
