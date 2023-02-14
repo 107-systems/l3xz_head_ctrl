@@ -20,7 +20,7 @@ colcon_ws$ colcon build --packages-select l3xz_head_ctrl
 #### How-to-run
 ```bash
 colcon_ws$ . install/setup.bash
-colcon_ws$ ros2 launch l3xz_head_ctrl head.py
+colcon_ws$ ros2 launch l3xz_head_ctrl head_ctrl.py
 ```
 
 #### Interface Documentation
@@ -29,16 +29,7 @@ colcon_ws$ ros2 launch l3xz_head_ctrl head.py
 |:-:|:-:|
 | `/l3xz/cmd_vel_head` | [`geometry_msgs/Twist`](http://docs.ros.org/en/api/geometry_msgs/html/msg/Twist.html) |
 
-##### Parameters
-| Name | Default | Description |
-|:-:|:-:|-|
-| `serial_port` | `/dev/ttyUSB0` | Serial port of RS485 bus. |
-| `serial_port_baudrate` | 115200 | Serial baud rate of RS485 bus. |
-| `pan_servo_id` | 7 | Dynamixel ID of pan servo. |
-| `tilt_servo_id` | 8 | Dynamixel ID of tilt servo. |
-| `pan_servo_initial_angle` | 180.0 | |
-| `pan_servo_min_angle` | 170.0 | |
-| `pan_servo_max_angle` | 190.0 | |
-| `tilt_servo_initial_angle` | 180.0 | |
-| `tilt_servo_min_angle` | 170.0 | |
-| `tilt_servo_max_angle` | 190.0 | |
+##### Published Topics
+| Default name | Type |
+|:-:|:-:|
+| `/l3xz/io/cmd_vel_head` | [`HeadVelocity`](https://github.com/107-systems/l3xz_io_dynamixel/blob/main/msg/HeadVelocity.msg) |

@@ -1,0 +1,85 @@
+/**
+ * Copyright (c) 2022 LXRobotics GmbH.
+ * Author: Alexander Entinger <alexander.entinger@lxrobotics.com>
+ * Contributors: https://github.com/107-systems/l3xz_head_ctrl/graphs/contributors.
+ */
+
+/**************************************************************************************
+ * INCLUDE
+ **************************************************************************************/
+
+#include <l3xz_head_ctrl/Node.h>
+
+/**************************************************************************************
+ * NAMESPACE
+ **************************************************************************************/
+
+namespace l3xz::head
+{
+
+/**************************************************************************************
+ * CTOR/DTOR
+ **************************************************************************************/
+
+Node::Node()
+: rclcpp::Node("l3xz_head_ctrl")
+, _pan_angular_velocity_rad_per_sec{0.0f}
+, _tilt_angular_velocity_rad_per_sec{0.0f}
+, _state{State::Teleop}
+{
+  /* Configure subscribers and publishers. */
+
+  _head_sub = create_subscription<geometry_msgs::msg::Twist>
+    ("/l3xz/cmd_vel_head", 1,
+    [this](geometry_msgs::msg::Twist::SharedPtr const msg)
+    {
+      _pan_angular_velocity_rad_per_sec  = msg->angular.z;
+      _tilt_angular_velocity_rad_per_sec = msg->angular.y;
+    });
+
+  _head_io_pub = create_publisher<l3xz_io_dynamixel::msg::HeadVelocity>("/l3xz/io/cmd_vel_head", 1);
+
+  /* Configure periodic control loop function. */
+
+  _ctrl_loop_timer = create_wall_timer
+    (std::chrono::milliseconds(50),
+     [this]()
+     {
+       this->ctrl_loop();
+     });
+
+  RCLCPP_INFO(get_logger(), "node initialization complete.");
+}
+
+/**************************************************************************************
+ * PRIVATE MEMBER FUNCTIONS
+ **************************************************************************************/
+
+void Node::ctrl_loop()
+{
+  l3xz_io_dynamixel::msg::HeadVelocity head_vel_msg;
+
+  switch(_state)
+  {
+    case State::Teleop:
+    {
+      head_vel_msg.pan_vel_rad_per_sec = _pan_angular_velocity_rad_per_sec;
+      head_vel_msg.tilt_vel_rad_per_sec = _tilt_angular_velocity_rad_per_sec;
+    }
+    break;
+    default:
+    {
+      head_vel_msg.pan_vel_rad_per_sec = 0.0f;
+      head_vel_msg.tilt_vel_rad_per_sec = 0.0f;
+    }
+    break;
+  }
+
+  _head_io_pub->publish(head_vel_msg);
+}
+
+/**************************************************************************************
+ * NAMESPACE
+ **************************************************************************************/
+
+} /* l3xz::head */

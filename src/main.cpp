@@ -10,8 +10,6 @@
 
 #include <rclcpp/rclcpp.hpp>
 
-#include <dynamixel++/dynamixel++.h>
-
 #include <l3xz_head_ctrl/Node.h>
 
 /**************************************************************************************
@@ -28,18 +26,6 @@ int main(int argc, char * argv[]) try
   rclcpp::shutdown();
 
   return EXIT_SUCCESS;
-}
-catch (dynamixelplusplus::CommunicationError const & e)
-{
-  std::cerr << "CommunicationError caught: " << e.what() << std::endl;
-  std::cerr << "Terminating ..." << std::endl;
-  return EXIT_FAILURE;
-}
-catch (dynamixelplusplus::StatusError const & e)
-{
-  std::cerr << "StatusError caught: " << e.what() << std::endl;
-  std::cerr << "Terminating ..." << std::endl;
-  return EXIT_FAILURE;
 }
 catch (std::runtime_error const & err)
 {
