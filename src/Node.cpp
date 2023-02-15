@@ -38,7 +38,7 @@ Node::Node()
       _tilt_angular_velocity_rad_per_sec = msg->angular.y;
     });
 
-  _head_io_pub = create_publisher<l3xz_io_dynamixel::msg::HeadVelocity>("/l3xz/io/cmd_vel_head", 1);
+  _head_io_pub = create_publisher<l3xz_io_dynamixel::msg::HeadVelocity>("/l3xz/head/velocity/target", 1);
 
   /* Configure periodic control loop function. */
 
