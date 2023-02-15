@@ -32,4 +32,4 @@ colcon_ws$ ros2 launch l3xz_head_ctrl head_ctrl.py
 ##### Published Topics
 | Default name | Type |
 |:-:|:-:|
-| `/l3xz/io/cmd_vel_head` | [`HeadVelocity`](https://github.com/107-systems/l3xz_io_dynamixel/blob/main/msg/HeadVelocity.msg) |
+| `/l3xz/head/velocity/target` | [`HeadVelocity`](https://github.com/107-systems/l3xz_io_dynamixel/blob/main/msg/HeadVelocity.msg) |
