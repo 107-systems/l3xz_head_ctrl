@@ -38,7 +38,7 @@ Node::Node()
       _tilt_angular_velocity_rad_per_sec = msg->angular.y;
     });
 
-  _head_io_pub = create_publisher<l3xz_io_dynamixel::msg::HeadVelocity>("/l3xz/head/velocity/target", 1);
+  _head_io_pub = create_publisher<l3xz_ros_dynamixel_bridge::msg::HeadVelocity>("/l3xz/head/velocity/target", 1);
 
   /* Configure periodic control loop function. */
 
@@ -70,7 +70,7 @@ void Node::ctrl_loop()
   _prev_ctrl_loop_timepoint = now;
 
 
-  l3xz_io_dynamixel::msg::HeadVelocity head_vel_msg;
+  l3xz_ros_dynamixel_bridge::msg::HeadVelocity head_vel_msg;
 
   switch(_state)
   {

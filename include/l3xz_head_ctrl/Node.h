@@ -18,7 +18,7 @@
 
 #include <geometry_msgs/msg/twist.hpp>
 
-#include <l3xz_io_dynamixel/msg/head_velocity.hpp>
+#include <l3xz_ros_dynamixel_bridge/msg/head_velocity.hpp>
 
 /**************************************************************************************
  * NAMESPACE
@@ -46,7 +46,7 @@ private:
   State _state;
 
   rclcpp::Subscription<geometry_msgs::msg::Twist>::SharedPtr _head_sub;
-  rclcpp::Publisher<l3xz_io_dynamixel::msg::HeadVelocity>::SharedPtr _head_io_pub;
+  rclcpp::Publisher<l3xz_ros_dynamixel_bridge::msg::HeadVelocity>::SharedPtr _head_io_pub;
   rclcpp::TimerBase::SharedPtr _ctrl_loop_timer;
 
   std::chrono::steady_clock::time_point _prev_ctrl_loop_timepoint;
