@@ -32,4 +32,5 @@ colcon_ws$ ros2 launch l3xz_head_ctrl head_ctrl.py
 ##### Published Topics
 | Default name | Type |
 |:-:|:-:|
-| `/l3xz/head/velocity/target` | [`HeadVelocity`](https://github.com/107-systems/l3xz_ros_dynamixel_bridge/blob/main/msg/HeadVelocity.msg) |
+| `/l3xz/head/pan/angular_velocity/target` | [`std_msgs/Float32`](https://docs.ros2.org/foxy/api/std_msgs/msg/Float32.html) |
+| `/l3xz/head/tilt/angular_velocity/target` | [`std_msgs/Float32`](https://docs.ros2.org/foxy/api/std_msgs/msg/Float32.html) |
