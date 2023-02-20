@@ -29,7 +29,6 @@ Node::Node()
 , _prev_ctrl_loop_timepoint{std::chrono::steady_clock::now()}
 {
   /* Configure subscribers and publishers. */
-
   _head_sub = create_subscription<geometry_msgs::msg::Twist>
     ("/l3xz/cmd_vel_head", 1,
     [this](geometry_msgs::msg::Twist::SharedPtr const msg)
@@ -38,16 +37,13 @@ Node::Node()
       _tilt_angular_velocity_rad_per_sec = msg->angular.y;
     });
 
-  _head_io_pub = create_publisher<l3xz_ros_dynamixel_bridge::msg::HeadVelocity>("/l3xz/head/velocity/target", 1);
+  _pan_angle_vel_pub  = create_publisher<std_msgs::msg::Float32>("/l3xz/head/pan/angular_velocity/target",  1);
+  _tilt_angle_vel_pub = create_publisher<std_msgs::msg::Float32>("/l3xz/head/tilt/angular_velocity/target", 1);
 
   /* Configure periodic control loop function. */
-
   _ctrl_loop_timer = create_wall_timer
     (std::chrono::milliseconds(CTRL_LOOP_RATE.count()),
-     [this]()
-     {
-       this->ctrl_loop();
-     });
+     [this]() { this->ctrl_loop(); });
 
   RCLCPP_INFO(get_logger(), "node initialization complete.");
 }
@@ -70,25 +66,26 @@ void Node::ctrl_loop()
   _prev_ctrl_loop_timepoint = now;
 
 
-  l3xz_ros_dynamixel_bridge::msg::HeadVelocity head_vel_msg;
+  std_msgs::msg::Float32 pan_angular_velocity_msg, tilt_angular_velocity_msg;
 
   switch(_state)
   {
     case State::Teleop:
     {
-      head_vel_msg.pan_vel_rad_per_sec = _pan_angular_velocity_rad_per_sec;
-      head_vel_msg.tilt_vel_rad_per_sec = _tilt_angular_velocity_rad_per_sec;
+      pan_angular_velocity_msg.data  = _pan_angular_velocity_rad_per_sec;
+      tilt_angular_velocity_msg.data = _tilt_angular_velocity_rad_per_sec;
     }
     break;
     default:
     {
-      head_vel_msg.pan_vel_rad_per_sec = 0.0f;
-      head_vel_msg.tilt_vel_rad_per_sec = 0.0f;
+      pan_angular_velocity_msg.data  = 0.0f;
+      tilt_angular_velocity_msg.data = 0.0f;
     }
     break;
   }
 
-  _head_io_pub->publish(head_vel_msg);
+  _pan_angle_vel_pub->publish(pan_angular_velocity_msg);
+  _tilt_angle_vel_pub->publish(tilt_angular_velocity_msg);
 }
 
 /**************************************************************************************

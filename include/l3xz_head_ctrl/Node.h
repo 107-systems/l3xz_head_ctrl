@@ -16,9 +16,8 @@
 
 #include <rclcpp/rclcpp.hpp>
 
+#include <std_msgs/msg/float32.hpp>
 #include <geometry_msgs/msg/twist.hpp>
-
-#include <l3xz_ros_dynamixel_bridge/msg/head_velocity.hpp>
 
 /**************************************************************************************
  * NAMESPACE
@@ -46,11 +45,12 @@ private:
   State _state;
 
   rclcpp::Subscription<geometry_msgs::msg::Twist>::SharedPtr _head_sub;
-  rclcpp::Publisher<l3xz_ros_dynamixel_bridge::msg::HeadVelocity>::SharedPtr _head_io_pub;
-  rclcpp::TimerBase::SharedPtr _ctrl_loop_timer;
+
+  rclcpp::Publisher<std_msgs::msg::Float32>::SharedPtr _pan_angle_vel_pub, _tilt_angle_vel_pub;
 
   std::chrono::steady_clock::time_point _prev_ctrl_loop_timepoint;
   static std::chrono::milliseconds constexpr CTRL_LOOP_RATE{10};
+  rclcpp::TimerBase::SharedPtr _ctrl_loop_timer;
   void ctrl_loop();
 };
 
