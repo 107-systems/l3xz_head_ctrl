@@ -42,7 +42,7 @@ private:
 
   enum class State
   {
-    Teleop,
+    Teleop, Hold
   };
   State _state;
 
@@ -54,6 +54,8 @@ private:
   static std::chrono::milliseconds constexpr CTRL_LOOP_RATE{10};
   rclcpp::TimerBase::SharedPtr _ctrl_loop_timer;
   void ctrl_loop();
+
+  std::chrono::steady_clock::time_point _prev_teleop_activity_timepoint;
 
   static void setAngularVelocity(rclcpp::Publisher<std_msgs::msg::Float32>::SharedPtr const pub, float const angular_velocity_rad_per_sec);
 

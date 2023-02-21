@@ -68,6 +68,8 @@ void Node::ctrl_loop()
                          std::chrono::duration_cast<std::chrono::milliseconds>(ctrl_loop_rate).count());
   _prev_ctrl_loop_timepoint = now;
 
+  static float constexpr ACTIVITY_EPSILON_rad_per_sec = 1.0f * M_PI / 180.0f;
+
   switch(_state)
   {
     case State::Teleop:
@@ -77,12 +79,33 @@ void Node::ctrl_loop()
 
       setAngularVelocity(_pan_angle_vel_pub, _pan_angular_velocity_rad_per_sec);
       setAngularVelocity(_tilt_angle_vel_pub, _tilt_angular_velocity_rad_per_sec);
+
+      /* Update the activity time-point, if we are currently actively
+       * teleoperating the robots sensor head.
+       */
+      if (fabs(_pan_angular_velocity_rad_per_sec)  > ACTIVITY_EPSILON_rad_per_sec ||
+          fabs(_tilt_angular_velocity_rad_per_sec) > ACTIVITY_EPSILON_rad_per_sec) {
+        _prev_teleop_activity_timepoint = now;
+      }
+
+      if ((now - _prev_teleop_activity_timepoint) > std::chrono::seconds(5)) {
+        _state = State::Hold;
+        RCLCPP_INFO(get_logger(), "transitioning to \"State::Hold\" due to inactivity timeout on manual control.");
+      }
     }
     break;
+    case State::Hold:
     default:
     {
       setMode_PositionControl(_pan_angle_mode_pub);
       setMode_PositionControl(_tilt_angle_mode_pub);
+
+      if (fabs(_pan_angular_velocity_rad_per_sec)  > ACTIVITY_EPSILON_rad_per_sec ||
+          fabs(_tilt_angular_velocity_rad_per_sec) > ACTIVITY_EPSILON_rad_per_sec) {
+        _state = State::Teleop;
+        RCLCPP_INFO(get_logger(), "transitioning to \"State::Teleop\" due to active manual control.");
+      }
+
     }
     break;
   }
