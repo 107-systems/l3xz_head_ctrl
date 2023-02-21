@@ -55,10 +55,13 @@ private:
   rclcpp::TimerBase::SharedPtr _ctrl_loop_timer;
   void ctrl_loop();
 
+  static float constexpr ACTIVITY_EPSILON_rad_per_sec = 1.0f * M_PI / 180.0f;
   std::chrono::steady_clock::time_point _prev_teleop_activity_timepoint;
 
-  static void setAngularVelocity(rclcpp::Publisher<std_msgs::msg::Float32>::SharedPtr const pub, float const angular_velocity_rad_per_sec);
+  State handle_Teleop();
+  State handle_Hold();
 
+  static void setAngularVelocity     (rclcpp::Publisher<std_msgs::msg::Float32>::SharedPtr const pub, float const angular_velocity_rad_per_sec);
   static void setMode_PositionControl(rclcpp::Publisher<l3xz_ros_dynamixel_bridge::msg::Mode>::SharedPtr const pub);
   static void setMode_VelocityControl(rclcpp::Publisher<l3xz_ros_dynamixel_bridge::msg::Mode>::SharedPtr const pub);
 };
