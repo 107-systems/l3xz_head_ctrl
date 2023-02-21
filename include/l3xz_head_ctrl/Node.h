@@ -38,7 +38,12 @@ public:
   Node();
 
 private:
-  float _pan_angular_velocity_rad_per_sec, _tilt_angular_velocity_rad_per_sec;
+  float _pan_angular_velocity_rad_per_sec,
+        _tilt_angular_velocity_rad_per_sec,
+        _pan_angle_rad_actual,
+        _tilt_angle_rad_actual,
+        _pan_angle_rad_target,
+        _tilt_angle_rad_target;
 
   enum class State
   {
@@ -47,7 +52,8 @@ private:
   State _state;
 
   rclcpp::Subscription<geometry_msgs::msg::Twist>::SharedPtr _head_sub;
-  rclcpp::Publisher<std_msgs::msg::Float32>::SharedPtr _pan_angle_vel_pub, _tilt_angle_vel_pub;
+  rclcpp::Subscription<std_msgs::msg::Float32>::SharedPtr _pan_angle_actual_sub, _tilt_angle_actual_sub;
+  rclcpp::Publisher<std_msgs::msg::Float32>::SharedPtr _pan_angle_pub, _tilt_angle_pub, _pan_angle_vel_pub, _tilt_angle_vel_pub;
   rclcpp::Publisher<l3xz_ros_dynamixel_bridge::msg::Mode>::SharedPtr _pan_angle_mode_pub, _tilt_angle_mode_pub;
 
   std::chrono::steady_clock::time_point _prev_ctrl_loop_timepoint;
@@ -62,6 +68,7 @@ private:
   State handle_Hold();
 
   static void setAngularVelocity     (rclcpp::Publisher<std_msgs::msg::Float32>::SharedPtr const pub, float const angular_velocity_rad_per_sec);
+  static void setAngle               (rclcpp::Publisher<std_msgs::msg::Float32>::SharedPtr const pub, float const angle_rad);
   static void setMode_PositionControl(rclcpp::Publisher<l3xz_ros_dynamixel_bridge::msg::Mode>::SharedPtr const pub);
   static void setMode_VelocityControl(rclcpp::Publisher<l3xz_ros_dynamixel_bridge::msg::Mode>::SharedPtr const pub);
 };

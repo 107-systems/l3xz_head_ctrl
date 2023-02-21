@@ -25,6 +25,10 @@ Node::Node()
 : rclcpp::Node("l3xz_head_ctrl")
 , _pan_angular_velocity_rad_per_sec{0.0f}
 , _tilt_angular_velocity_rad_per_sec{0.0f}
+, _pan_angle_rad_actual{0.0f}
+, _tilt_angle_rad_actual{0.0f}
+, _pan_angle_rad_target{0.0f}
+, _tilt_angle_rad_target{0.0f}
 , _state{State::Teleop}
 , _prev_ctrl_loop_timepoint{std::chrono::steady_clock::now()}
 {
@@ -37,7 +41,18 @@ Node::Node()
       _tilt_angular_velocity_rad_per_sec = msg->angular.y;
     });
 
+  _pan_angle_actual_sub = create_subscription<std_msgs::msg::Float32>
+    ("/l3xz/head/pan/angle/actual", 1,
+     [this](std_msgs::msg::Float32::SharedPtr const msg) { _pan_angle_rad_actual = msg->data; });
+
+  _tilt_angle_actual_sub = create_subscription<std_msgs::msg::Float32>
+    ("/l3xz/head/tilt/angle/actual", 1,
+     [this](std_msgs::msg::Float32::SharedPtr const msg) { _tilt_angle_rad_actual = msg->data; });
+
+  _pan_angle_pub      = create_publisher<std_msgs::msg::Float32>("/l3xz/head/pan/angle/target",  1);
   _pan_angle_vel_pub  = create_publisher<std_msgs::msg::Float32>("/l3xz/head/pan/angular_velocity/target",  1);
+
+  _tilt_angle_pub     = create_publisher<std_msgs::msg::Float32>("/l3xz/head/tilt/angle/target", 1);
   _tilt_angle_vel_pub = create_publisher<std_msgs::msg::Float32>("/l3xz/head/tilt/angular_velocity/target", 1);
 
   _pan_angle_mode_pub  = create_publisher<l3xz_ros_dynamixel_bridge::msg::Mode>("/l3xz/head/pan/mode/set",  1);
@@ -99,6 +114,8 @@ Node::State Node::handle_Teleop()
   if ((now - _prev_teleop_activity_timepoint) > std::chrono::seconds(5))
   {
     RCLCPP_INFO(get_logger(), "transitioning to \"State::Hold\" due to inactivity timeout on manual control.");
+    _pan_angle_rad_target = _pan_angle_rad_actual;
+    _tilt_angle_rad_target = _tilt_angle_rad_actual;
     return State::Hold;
   }
 
@@ -109,6 +126,9 @@ Node::State Node::handle_Hold()
 {
   setMode_PositionControl(_pan_angle_mode_pub);
   setMode_PositionControl(_tilt_angle_mode_pub);
+
+  setAngle(_pan_angle_pub, _pan_angle_rad_target);
+  setAngle(_tilt_angle_pub, _tilt_angle_rad_target);
 
   if (fabs(_pan_angular_velocity_rad_per_sec)  > ACTIVITY_EPSILON_rad_per_sec ||
       fabs(_tilt_angular_velocity_rad_per_sec) > ACTIVITY_EPSILON_rad_per_sec)
@@ -124,6 +144,13 @@ void Node::setAngularVelocity(rclcpp::Publisher<std_msgs::msg::Float32>::SharedP
 {
   std_msgs::msg::Float32 msg;
   msg.data = angular_velocity_rad_per_sec;
+  pub->publish(msg);
+}
+
+void Node::setAngle(rclcpp::Publisher<std_msgs::msg::Float32>::SharedPtr const pub, float const angle_rad)
+{
+  std_msgs::msg::Float32 msg;
+  msg.data = angle_rad;
   pub->publish(msg);
 }
 
