@@ -40,6 +40,9 @@ Node::Node()
   _pan_angle_vel_pub  = create_publisher<std_msgs::msg::Float32>("/l3xz/head/pan/angular_velocity/target",  1);
   _tilt_angle_vel_pub = create_publisher<std_msgs::msg::Float32>("/l3xz/head/tilt/angular_velocity/target", 1);
 
+  _pan_angle_mode_pub  = create_publisher<l3xz_ros_dynamixel_bridge::msg::Mode>("/l3xz/head/pan/mode/set",  1);
+  _tilt_angle_mode_pub = create_publisher<l3xz_ros_dynamixel_bridge::msg::Mode>("/l3xz/head/tilt/mode/set", 1);
+
   /* Configure periodic control loop function. */
   _ctrl_loop_timer = create_wall_timer
     (std::chrono::milliseconds(CTRL_LOOP_RATE.count()),
@@ -65,27 +68,45 @@ void Node::ctrl_loop()
                          std::chrono::duration_cast<std::chrono::milliseconds>(ctrl_loop_rate).count());
   _prev_ctrl_loop_timepoint = now;
 
-
-  std_msgs::msg::Float32 pan_angular_velocity_msg, tilt_angular_velocity_msg;
-
   switch(_state)
   {
     case State::Teleop:
     {
-      pan_angular_velocity_msg.data  = _pan_angular_velocity_rad_per_sec;
-      tilt_angular_velocity_msg.data = _tilt_angular_velocity_rad_per_sec;
+      setMode_VelocityControl(_pan_angle_mode_pub);
+      setMode_VelocityControl(_tilt_angle_mode_pub);
+
+      setAngularVelocity(_pan_angle_vel_pub, _pan_angular_velocity_rad_per_sec);
+      setAngularVelocity(_tilt_angle_vel_pub, _tilt_angular_velocity_rad_per_sec);
     }
     break;
     default:
     {
-      pan_angular_velocity_msg.data  = 0.0f;
-      tilt_angular_velocity_msg.data = 0.0f;
+      setMode_PositionControl(_pan_angle_mode_pub);
+      setMode_PositionControl(_tilt_angle_mode_pub);
     }
     break;
   }
+}
 
-  _pan_angle_vel_pub->publish(pan_angular_velocity_msg);
-  _tilt_angle_vel_pub->publish(tilt_angular_velocity_msg);
+void Node::setAngularVelocity(rclcpp::Publisher<std_msgs::msg::Float32>::SharedPtr const pub, float const angular_velocity_rad_per_sec)
+{
+  std_msgs::msg::Float32 msg;
+  msg.data = angular_velocity_rad_per_sec;
+  pub->publish(msg);
+}
+
+void Node::setMode_PositionControl(rclcpp::Publisher<l3xz_ros_dynamixel_bridge::msg::Mode>::SharedPtr const pub)
+{
+  l3xz_ros_dynamixel_bridge::msg::Mode msg;
+  msg.servo_mode = l3xz_ros_dynamixel_bridge::msg::Mode::SERVO_MODE_POSITION_CONTROL;
+  pub->publish(msg);
+}
+
+void Node::setMode_VelocityControl(rclcpp::Publisher<l3xz_ros_dynamixel_bridge::msg::Mode>::SharedPtr const pub)
+{
+  l3xz_ros_dynamixel_bridge::msg::Mode msg;
+  msg.servo_mode = l3xz_ros_dynamixel_bridge::msg::Mode::SERVO_MODE_VELOCITY_CONTROL;
+  pub->publish(msg);
 }
 
 /**************************************************************************************

@@ -19,6 +19,8 @@
 #include <std_msgs/msg/float32.hpp>
 #include <geometry_msgs/msg/twist.hpp>
 
+#include <l3xz_ros_dynamixel_bridge/msg/mode.hpp>
+
 /**************************************************************************************
  * NAMESPACE
  **************************************************************************************/
@@ -45,13 +47,18 @@ private:
   State _state;
 
   rclcpp::Subscription<geometry_msgs::msg::Twist>::SharedPtr _head_sub;
-
   rclcpp::Publisher<std_msgs::msg::Float32>::SharedPtr _pan_angle_vel_pub, _tilt_angle_vel_pub;
+  rclcpp::Publisher<l3xz_ros_dynamixel_bridge::msg::Mode>::SharedPtr _pan_angle_mode_pub, _tilt_angle_mode_pub;
 
   std::chrono::steady_clock::time_point _prev_ctrl_loop_timepoint;
   static std::chrono::milliseconds constexpr CTRL_LOOP_RATE{10};
   rclcpp::TimerBase::SharedPtr _ctrl_loop_timer;
   void ctrl_loop();
+
+  static void setAngularVelocity(rclcpp::Publisher<std_msgs::msg::Float32>::SharedPtr const pub, float const angular_velocity_rad_per_sec);
+
+  static void setMode_PositionControl(rclcpp::Publisher<l3xz_ros_dynamixel_bridge::msg::Mode>::SharedPtr const pub);
+  static void setMode_VelocityControl(rclcpp::Publisher<l3xz_ros_dynamixel_bridge::msg::Mode>::SharedPtr const pub);
 };
 
 /**************************************************************************************
