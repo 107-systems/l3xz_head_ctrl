@@ -185,6 +185,12 @@ Node::State Node::handle_Teleop()
   setAngularVelocity(_pan_angle_vel_pub, target_pan_ang_vel_rad_per_sec);
   setAngularVelocity(_tilt_angle_vel_pub, target_tilt_ang_vel_rad_per_sec);
 
+  /* Continue publishing the target angles to to prevent
+   * a jump during mode change.
+   */
+  setAngle(_pan_angle_pub, _pan_angle_rad_actual);
+  setAngle(_tilt_angle_pub, _tilt_angle_rad_actual);
+
   /* Update the activity time-point, if we are currently actively
    * teleoperating the robots sensor head.
    */
