@@ -154,8 +154,36 @@ Node::State Node::handle_Teleop()
   setMode_VelocityControl(_pan_angle_mode_pub);
   setMode_VelocityControl(_tilt_angle_mode_pub);
 
-  setAngularVelocity(_pan_angle_vel_pub, _pan_angular_velocity_rad_per_sec);
-  setAngularVelocity(_tilt_angle_vel_pub, _tilt_angular_velocity_rad_per_sec);
+  /* Determine new target angular velocities for
+   * both pan and tilt servo.
+   */
+  float target_pan_ang_vel_rad_per_sec  = _pan_angular_velocity_rad_per_sec;
+  float target_tilt_ang_vel_rad_per_sec = _tilt_angular_velocity_rad_per_sec;
+
+  /* Check if we are exceeding the limits and stop
+   * servo movement.
+   */
+  static float const PAN_MIN_ANGLE_rad = get_parameter("pan_min_angle_deg").as_double() * M_PI / 180.0f;
+  static float const PAN_MAX_ANGLE_rad = get_parameter("pan_max_angle_deg").as_double() * M_PI / 180.0f;
+
+  if ((_pan_angle_rad_actual < PAN_MIN_ANGLE_rad) && (target_pan_ang_vel_rad_per_sec < 0.0f))
+    target_pan_ang_vel_rad_per_sec = 0.0f;
+  if ((_pan_angle_rad_actual > PAN_MAX_ANGLE_rad) && (target_pan_ang_vel_rad_per_sec > 0.0f))
+    target_pan_ang_vel_rad_per_sec = 0.0f;
+
+  static float const TILT_MIN_ANGLE_rad = get_parameter("tilt_min_angle_deg").as_double() * M_PI / 180.0f;
+  static float const TILT_MAX_ANGLE_rad = get_parameter("tilt_max_angle_deg").as_double() * M_PI / 180.0f;
+
+  if ((_tilt_angle_rad_actual < TILT_MIN_ANGLE_rad) && (target_tilt_ang_vel_rad_per_sec < 0.0f))
+    target_tilt_ang_vel_rad_per_sec = 0.0f;
+  if ((_tilt_angle_rad_actual > TILT_MAX_ANGLE_rad) && (target_tilt_ang_vel_rad_per_sec > 0.0f))
+    target_tilt_ang_vel_rad_per_sec = 0.0f;
+
+  /* Publish the desired angular target velocities to
+   * the ROS2/Dynamixel bridge.
+   */
+  setAngularVelocity(_pan_angle_vel_pub, target_pan_ang_vel_rad_per_sec);
+  setAngularVelocity(_tilt_angle_vel_pub, target_tilt_ang_vel_rad_per_sec);
 
   /* Update the activity time-point, if we are currently actively
    * teleoperating the robots sensor head.
