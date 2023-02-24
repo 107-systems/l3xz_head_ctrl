@@ -11,6 +11,7 @@
  * INCLUDE
  **************************************************************************************/
 
+#include <tuple>
 #include <chrono>
 #include <memory>
 
@@ -39,15 +40,18 @@ public:
 
 private:
   float _pan_angle_rad_actual,
-        _tilt_angle_rad_actual,
-        _pan_angle_rad_target,
-        _tilt_angle_rad_target;
+        _tilt_angle_rad_actual;
 
   enum class State
   {
     Init, Hold, Teleop
   };
   State _state;
+
+  enum class Mode
+  {
+    PositionControl, VelocityControl
+  };
 
   enum class Servo
   {
@@ -90,9 +94,9 @@ private:
 
   std::chrono::steady_clock::time_point _prev_teleop_activity_timepoint;
 
-  State handle_Init();
-  State handle_Hold();
-  State handle_Teleop();
+  std::tuple<State, Mode, float, float, float, float> handle_Init();
+  std::tuple<State, Mode, float, float, float, float> handle_Hold();
+  std::tuple<State, Mode, float, float, float, float> handle_Teleop();
 
   static void setAngularVelocity     (rclcpp::Publisher<std_msgs::msg::Float32>::SharedPtr const pub, float const angular_velocity_rad_per_sec);
   static void setAngle               (rclcpp::Publisher<std_msgs::msg::Float32>::SharedPtr const pub, float const angle_rad);

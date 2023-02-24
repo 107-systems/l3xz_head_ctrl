@@ -25,8 +25,6 @@ Node::Node()
 : rclcpp::Node("l3xz_head_ctrl")
 , _pan_angle_rad_actual{0.0f}
 , _tilt_angle_rad_actual{0.0f}
-, _pan_angle_rad_target{0.0f}
-, _tilt_angle_rad_target{0.0f}
 , _state{State::Init}
 , _teleop_target{}
 , _prev_ctrl_loop_timepoint{std::chrono::steady_clock::now()}
@@ -90,27 +88,39 @@ void Node::ctrl_loop()
                          std::chrono::duration_cast<std::chrono::milliseconds>(ctrl_loop_rate).count());
   _prev_ctrl_loop_timepoint = now;
 
-  State next_state = _state;
+  auto next = std::make_tuple(_state, Mode::PositionControl, 0.0f, 0.0f, 0.0f, 0.0f);
   switch(_state)
   {
-    case State::Init:   next_state = handle_Init();   break;
-    case State::Teleop: next_state = handle_Teleop(); break;
+    case State::Init:   next = handle_Init();   break;
+    case State::Teleop: next = handle_Teleop(); break;
     default:
-    case State::Hold:   next_state = handle_Hold();   break;
+    case State::Hold:   next = handle_Hold();   break;
   }
+  auto [next_state, next_mode, next_pan_rps, next_tilt_rps, next_pan_deg, next_tilt_deg] = next;
   _state = next_state;
+
+  if (next_mode == Mode::PositionControl)
+  {
+    setMode_PositionControl(_pan_angle_mode_pub);
+    setMode_PositionControl(_tilt_angle_mode_pub);
+  }
+  else
+  {
+    setMode_VelocityControl(_pan_angle_mode_pub);
+    setMode_VelocityControl(_tilt_angle_mode_pub);
+  }
+
+  setAngularVelocity(_pan_angle_vel_pub, next_pan_rps);
+  setAngularVelocity(_tilt_angle_vel_pub, next_tilt_rps);
+
+  setAngle(_pan_angle_pub,  next_pan_deg);
+  setAngle(_tilt_angle_pub, next_tilt_deg);
 }
 
-Node::State Node::handle_Init()
+std::tuple<Node::State, Node::Mode, float, float, float, float> Node::handle_Init()
 {
-  setMode_PositionControl(_pan_angle_mode_pub);
-  setMode_PositionControl(_tilt_angle_mode_pub);
-
   float const PAN_INITIAL_ANGLE_rad  = get_parameter("pan_initial_angle_deg").as_double()  * M_PI / 180.0f;
   float const TILT_INITIAL_ANGLE_rad = get_parameter("tilt_initial_angle_deg").as_double() * M_PI / 180.0f;
-
-  setAngle(_pan_angle_pub,  PAN_INITIAL_ANGLE_rad);
-  setAngle(_tilt_angle_pub, TILT_INITIAL_ANGLE_rad);
 
   auto initial_target_angle_reached = [](float const target_rad, float const actual_rad)
   {
@@ -122,36 +132,25 @@ Node::State Node::handle_Init()
       initial_target_angle_reached(TILT_INITIAL_ANGLE_rad, _tilt_angle_rad_actual))
   {
     RCLCPP_INFO(get_logger(), "transitioning to \"State::Hold\".");
-    _pan_angle_rad_target = _pan_angle_rad_actual;
-    _tilt_angle_rad_target = _tilt_angle_rad_actual;
-    return State::Hold;
+    return std::make_tuple(State::Hold, Mode::VelocityControl, 0.0f, 0.0f, _pan_angle_rad_actual, _tilt_angle_rad_actual);
   }
 
-  return State::Init;
+  return std::make_tuple(State::Init, Mode::PositionControl, 0.0f, 0.0f, PAN_INITIAL_ANGLE_rad, TILT_INITIAL_ANGLE_rad);
 }
 
-Node::State Node::handle_Hold()
+std::tuple<Node::State, Node::Mode, float, float, float, float> Node::handle_Hold()
 {
-  setMode_PositionControl(_pan_angle_mode_pub);
-  setMode_PositionControl(_tilt_angle_mode_pub);
-
-  setAngle(_pan_angle_pub, _pan_angle_rad_target);
-  setAngle(_tilt_angle_pub, _tilt_angle_rad_target);
-
   if (_teleop_target.is_active_manual_control())
   {
     RCLCPP_INFO(get_logger(), "transitioning to \"State::Teleop\" due to active manual control.");
-    return State::Teleop;
+    return std::make_tuple(State::Teleop, Mode::VelocityControl, 0.0f, 0.0f, _pan_angle_rad_actual, _tilt_angle_rad_actual);
   }
 
-  return State::Hold;
+  return std::make_tuple(State::Hold, Mode::PositionControl, 0.0f, 0.0f, _pan_angle_rad_actual, _tilt_angle_rad_actual);
 }
 
-Node::State Node::handle_Teleop()
+std::tuple<Node::State, Node::Mode, float, float, float, float> Node::handle_Teleop()
 {
-  setMode_VelocityControl(_pan_angle_mode_pub);
-  setMode_VelocityControl(_tilt_angle_mode_pub);
-
   /* Determine new target angular velocities for
    * both pan and tilt servo.
    */
@@ -177,18 +176,6 @@ Node::State Node::handle_Teleop()
   if ((_tilt_angle_rad_actual > TILT_MAX_ANGLE_rad) && (target_tilt_ang_vel_rad_per_sec > 0.0f))
     target_tilt_ang_vel_rad_per_sec = 0.0f;
 
-  /* Publish the desired angular target velocities to
-   * the ROS2/Dynamixel bridge.
-   */
-  setAngularVelocity(_pan_angle_vel_pub, target_pan_ang_vel_rad_per_sec);
-  setAngularVelocity(_tilt_angle_vel_pub, target_tilt_ang_vel_rad_per_sec);
-
-  /* Continue publishing the target angles to to prevent
-   * a jump during mode change.
-   */
-  setAngle(_pan_angle_pub, _pan_angle_rad_actual);
-  setAngle(_tilt_angle_pub, _tilt_angle_rad_actual);
-
   /* Update the activity time-point, if we are currently actively
    * teleoperating the robots sensor head.
    */
@@ -200,12 +187,10 @@ Node::State Node::handle_Teleop()
   if ((now - _prev_teleop_activity_timepoint) > std::chrono::seconds(5))
   {
     RCLCPP_INFO(get_logger(), "transitioning to \"State::Hold\" due to inactivity timeout on manual control.");
-    _pan_angle_rad_target = _pan_angle_rad_actual;
-    _tilt_angle_rad_target = _tilt_angle_rad_actual;
-    return State::Hold;
+    return std::make_tuple(State::Hold, Mode::PositionControl, 0.0f, 0.0f, _pan_angle_rad_actual, _tilt_angle_rad_actual);
   }
 
-  return State::Teleop;
+  return std::make_tuple(State::Teleop, Mode::VelocityControl, target_pan_ang_vel_rad_per_sec, target_tilt_ang_vel_rad_per_sec, _pan_angle_rad_actual, _tilt_angle_rad_actual);
 }
 
 void Node::setAngularVelocity(rclcpp::Publisher<std_msgs::msg::Float32>::SharedPtr const pub, float const angular_velocity_rad_per_sec)
