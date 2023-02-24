@@ -23,13 +23,12 @@ namespace l3xz::head
 
 Node::Node()
 : rclcpp::Node("l3xz_head_ctrl")
-, _pan_angular_velocity_rad_per_sec{0.0f}
-, _tilt_angular_velocity_rad_per_sec{0.0f}
 , _pan_angle_rad_actual{0.0f}
 , _tilt_angle_rad_actual{0.0f}
 , _pan_angle_rad_target{0.0f}
 , _tilt_angle_rad_target{0.0f}
 , _state{State::Init}
+, _teleop_target{}
 , _prev_ctrl_loop_timepoint{std::chrono::steady_clock::now()}
 {
   declare_parameter("pan_initial_angle_deg", 180.0f);
@@ -45,8 +44,8 @@ Node::Node()
     ("/l3xz/cmd_vel_head", 1,
     [this](geometry_msgs::msg::Twist::SharedPtr const msg)
     {
-      _pan_angular_velocity_rad_per_sec  = msg->angular.z;
-      _tilt_angular_velocity_rad_per_sec = msg->angular.y;
+      _teleop_target.set_angular_velocity_rps(Servo::Pan,  msg->angular.z);
+      _teleop_target.set_angular_velocity_rps(Servo::Tilt, msg->angular.y);
     });
 
   _pan_angle_actual_sub = create_subscription<std_msgs::msg::Float32>
@@ -139,8 +138,8 @@ Node::State Node::handle_Hold()
   setAngle(_pan_angle_pub, _pan_angle_rad_target);
   setAngle(_tilt_angle_pub, _tilt_angle_rad_target);
 
-  if (fabs(_pan_angular_velocity_rad_per_sec)  > ACTIVITY_EPSILON_rad_per_sec ||
-      fabs(_tilt_angular_velocity_rad_per_sec) > ACTIVITY_EPSILON_rad_per_sec)
+  if (fabs(_teleop_target.angular_velocity_rps(Servo::Pan))  > ACTIVITY_EPSILON_rad_per_sec ||
+      fabs(_teleop_target.angular_velocity_rps(Servo::Tilt)) > ACTIVITY_EPSILON_rad_per_sec)
   {
     RCLCPP_INFO(get_logger(), "transitioning to \"State::Teleop\" due to active manual control.");
     return State::Teleop;
@@ -157,8 +156,8 @@ Node::State Node::handle_Teleop()
   /* Determine new target angular velocities for
    * both pan and tilt servo.
    */
-  float target_pan_ang_vel_rad_per_sec  = _pan_angular_velocity_rad_per_sec;
-  float target_tilt_ang_vel_rad_per_sec = _tilt_angular_velocity_rad_per_sec;
+  float target_pan_ang_vel_rad_per_sec  = _teleop_target.angular_velocity_rps(Servo::Pan);
+  float target_tilt_ang_vel_rad_per_sec = _teleop_target.angular_velocity_rps(Servo::Tilt);
 
   /* Check if we are exceeding the limits and stop
    * servo movement.
@@ -196,8 +195,8 @@ Node::State Node::handle_Teleop()
    */
   auto const now = std::chrono::steady_clock::now();
 
-  if (fabs(_pan_angular_velocity_rad_per_sec)  > ACTIVITY_EPSILON_rad_per_sec ||
-      fabs(_tilt_angular_velocity_rad_per_sec) > ACTIVITY_EPSILON_rad_per_sec) {
+  if (fabs(_teleop_target.angular_velocity_rps(Servo::Pan))  > ACTIVITY_EPSILON_rad_per_sec ||
+      fabs(_teleop_target.angular_velocity_rps(Servo::Tilt)) > ACTIVITY_EPSILON_rad_per_sec) {
     _prev_teleop_activity_timepoint = now;
   }
 

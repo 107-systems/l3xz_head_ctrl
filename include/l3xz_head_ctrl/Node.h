@@ -38,9 +38,7 @@ public:
   Node();
 
 private:
-  float _pan_angular_velocity_rad_per_sec,
-        _tilt_angular_velocity_rad_per_sec,
-        _pan_angle_rad_actual,
+  float _pan_angle_rad_actual,
         _tilt_angle_rad_actual,
         _pan_angle_rad_target,
         _tilt_angle_rad_target;
@@ -50,6 +48,29 @@ private:
     Init, Hold, Teleop
   };
   State _state;
+
+  enum class Servo
+  {
+    Pan, Tilt
+  };
+
+  class TeleopTarget
+  {
+  private:
+    std::map<Servo, float> _angular_velocity_rad_per_sec_map;
+  public:
+    TeleopTarget()
+    : _angular_velocity_rad_per_sec_map
+    {
+      {Servo::Pan,  0.0f},
+      {Servo::Tilt, 0.0f},
+    }
+    { }
+    [[nodiscard]] float angular_velocity_rps(Servo const servo) const { return _angular_velocity_rad_per_sec_map.at(servo); }
+    void set_angular_velocity_rps(Servo const servo, float const ang_vel_dps) { _angular_velocity_rad_per_sec_map[servo] = ang_vel_dps; }
+  };
+
+  TeleopTarget _teleop_target;
 
   rclcpp::Subscription<geometry_msgs::msg::Twist>::SharedPtr _head_sub;
   rclcpp::Subscription<std_msgs::msg::Float32>::SharedPtr _pan_angle_actual_sub, _tilt_angle_actual_sub;
