@@ -98,10 +98,12 @@ private:
   std::tuple<State, Mode, float, float, float, float> handle_Hold();
   std::tuple<State, Mode, float, float, float, float> handle_Teleop();
 
-  static void setAngularVelocity     (rclcpp::Publisher<std_msgs::msg::Float32>::SharedPtr const pub, float const angular_velocity_rad_per_sec);
-  static void setAngle               (rclcpp::Publisher<std_msgs::msg::Float32>::SharedPtr const pub, float const angle_rad);
-  static void setMode_PositionControl(rclcpp::Publisher<ros2_dynamixel_bridge::msg::Mode>::SharedPtr const pub);
-  static void setMode_VelocityControl(rclcpp::Publisher<ros2_dynamixel_bridge::msg::Mode>::SharedPtr const pub);
+  void publish(Mode const mode, float const pan_rps, float const tilt_rps, float const deg, float const tilt_deg);
+
+  static void publish_AngularVelocity     (rclcpp::Publisher<std_msgs::msg::Float32>::SharedPtr const pub, float const angular_velocity_rad_per_sec);
+  static void publish_Angle               (rclcpp::Publisher<std_msgs::msg::Float32>::SharedPtr const pub, float const angle_rad);
+  static void publish_mode_PositionControl(rclcpp::Publisher<ros2_dynamixel_bridge::msg::Mode>::SharedPtr const pub);
+  static void publish_mode_VelocityControl(rclcpp::Publisher<ros2_dynamixel_bridge::msg::Mode>::SharedPtr const pub);
 };
 
 /**************************************************************************************

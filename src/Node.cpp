@@ -99,22 +99,7 @@ void Node::ctrl_loop()
   auto [next_state, next_mode, next_pan_rps, next_tilt_rps, next_pan_deg, next_tilt_deg] = next;
   _state = next_state;
 
-  if (next_mode == Mode::PositionControl)
-  {
-    setMode_PositionControl(_pan_angle_mode_pub);
-    setMode_PositionControl(_tilt_angle_mode_pub);
-  }
-  else
-  {
-    setMode_VelocityControl(_pan_angle_mode_pub);
-    setMode_VelocityControl(_tilt_angle_mode_pub);
-  }
-
-  setAngularVelocity(_pan_angle_vel_pub, next_pan_rps);
-  setAngularVelocity(_tilt_angle_vel_pub, next_tilt_rps);
-
-  setAngle(_pan_angle_pub,  next_pan_deg);
-  setAngle(_tilt_angle_pub, next_tilt_deg);
+  publish(next_mode, next_pan_rps, next_tilt_rps, next_pan_deg, next_tilt_deg);
 }
 
 std::tuple<Node::State, Node::Mode, float, float, float, float> Node::handle_Init()
@@ -193,28 +178,48 @@ std::tuple<Node::State, Node::Mode, float, float, float, float> Node::handle_Tel
   return std::make_tuple(State::Teleop, Mode::VelocityControl, target_pan_ang_vel_rad_per_sec, target_tilt_ang_vel_rad_per_sec, _pan_angle_rad_actual, _tilt_angle_rad_actual);
 }
 
-void Node::setAngularVelocity(rclcpp::Publisher<std_msgs::msg::Float32>::SharedPtr const pub, float const angular_velocity_rad_per_sec)
+void Node::publish(Mode const mode, float const pan_rps, float const tilt_rps, float const pan_deg, float const tilt_deg)
+{
+  if (mode == Mode::PositionControl)
+  {
+    publish_mode_PositionControl(_pan_angle_mode_pub);
+    publish_mode_PositionControl(_tilt_angle_mode_pub);
+  }
+  else
+  {
+    publish_mode_VelocityControl(_pan_angle_mode_pub);
+    publish_mode_VelocityControl(_tilt_angle_mode_pub);
+  }
+
+  publish_AngularVelocity(_pan_angle_vel_pub, pan_rps);
+  publish_AngularVelocity(_tilt_angle_vel_pub, tilt_rps);
+
+  publish_Angle(_pan_angle_pub,  pan_deg);
+  publish_Angle(_tilt_angle_pub, tilt_deg);
+}
+
+void Node::publish_AngularVelocity(rclcpp::Publisher<std_msgs::msg::Float32>::SharedPtr const pub, float const angular_velocity_rad_per_sec)
 {
   std_msgs::msg::Float32 msg;
   msg.data = angular_velocity_rad_per_sec;
   pub->publish(msg);
 }
 
-void Node::setAngle(rclcpp::Publisher<std_msgs::msg::Float32>::SharedPtr const pub, float const angle_rad)
+void Node::publish_Angle(rclcpp::Publisher<std_msgs::msg::Float32>::SharedPtr const pub, float const angle_rad)
 {
   std_msgs::msg::Float32 msg;
   msg.data = angle_rad;
   pub->publish(msg);
 }
 
-void Node::setMode_PositionControl(rclcpp::Publisher<ros2_dynamixel_bridge::msg::Mode>::SharedPtr const pub)
+void Node::publish_mode_PositionControl(rclcpp::Publisher<ros2_dynamixel_bridge::msg::Mode>::SharedPtr const pub)
 {
   ros2_dynamixel_bridge::msg::Mode msg;
   msg.servo_mode = ros2_dynamixel_bridge::msg::Mode::SERVO_MODE_POSITION_CONTROL;
   pub->publish(msg);
 }
 
-void Node::setMode_VelocityControl(rclcpp::Publisher<ros2_dynamixel_bridge::msg::Mode>::SharedPtr const pub)
+void Node::publish_mode_VelocityControl(rclcpp::Publisher<ros2_dynamixel_bridge::msg::Mode>::SharedPtr const pub)
 {
   ros2_dynamixel_bridge::msg::Mode msg;
   msg.servo_mode = ros2_dynamixel_bridge::msg::Mode::SERVO_MODE_VELOCITY_CONTROL;
