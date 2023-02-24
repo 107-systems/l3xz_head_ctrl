@@ -88,7 +88,12 @@ void Node::ctrl_loop()
                          std::chrono::duration_cast<std::chrono::milliseconds>(ctrl_loop_rate).count());
   _prev_ctrl_loop_timepoint = now;
 
-  auto next = std::make_tuple(_state, Mode::PositionControl, 0.0f, 0.0f, 0.0f, 0.0f);
+  auto next = std::make_tuple(_state,
+                              Mode::PositionControl,
+                              0.0f,
+                              0.0f,
+                              get_parameter("pan_initial_angle_deg").as_double()  * M_PI / 180.0f,
+                              get_parameter("tilt_initial_angle_deg").as_double() * M_PI / 180.0f);
   switch(_state)
   {
     case State::Init:   next = handle_Init();   break;
