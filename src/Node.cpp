@@ -138,8 +138,7 @@ Node::State Node::handle_Hold()
   setAngle(_pan_angle_pub, _pan_angle_rad_target);
   setAngle(_tilt_angle_pub, _tilt_angle_rad_target);
 
-  if (fabs(_teleop_target.angular_velocity_rps(Servo::Pan))  > ACTIVITY_EPSILON_rad_per_sec ||
-      fabs(_teleop_target.angular_velocity_rps(Servo::Tilt)) > ACTIVITY_EPSILON_rad_per_sec)
+  if (_teleop_target.is_active_manual_control())
   {
     RCLCPP_INFO(get_logger(), "transitioning to \"State::Teleop\" due to active manual control.");
     return State::Teleop;
@@ -195,10 +194,8 @@ Node::State Node::handle_Teleop()
    */
   auto const now = std::chrono::steady_clock::now();
 
-  if (fabs(_teleop_target.angular_velocity_rps(Servo::Pan))  > ACTIVITY_EPSILON_rad_per_sec ||
-      fabs(_teleop_target.angular_velocity_rps(Servo::Tilt)) > ACTIVITY_EPSILON_rad_per_sec) {
+  if (_teleop_target.is_active_manual_control())
     _prev_teleop_activity_timepoint = now;
-  }
 
   if ((now - _prev_teleop_activity_timepoint) > std::chrono::seconds(5))
   {
