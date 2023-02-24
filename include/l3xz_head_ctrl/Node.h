@@ -39,9 +39,6 @@ public:
   Node();
 
 private:
-  float _pan_angle_rad_actual,
-        _tilt_angle_rad_actual;
-
   enum class State
   {
     Init, Hold, Teleop
@@ -80,7 +77,23 @@ private:
     }
   };
 
+  class ServoActual
+  {
+  private:
+    std::map<Servo, float> _angle_rad_map;
+  public:
+    ServoActual()
+    : _angle_rad_map
+    {
+      {Servo::Pan,  0.0f},
+      {Servo::Tilt, 0.0f},
+    } { }
+    [[nodiscard]] float angle_rad(Servo const servo) const { return _angle_rad_map.at(servo); }
+    void set_angle_rad(Servo const servo, float const angle_rad) { _angle_rad_map[servo] = angle_rad; }
+  };
+
   TeleopTarget _teleop_target;
+  ServoActual _servo_actual;
 
   rclcpp::Subscription<geometry_msgs::msg::Twist>::SharedPtr _head_sub;
   rclcpp::Subscription<std_msgs::msg::Float32>::SharedPtr _pan_angle_actual_sub, _tilt_angle_actual_sub;
