@@ -13,7 +13,7 @@ Head controller for the L3X-Z electric/hydraulic hexapod robot.
 #### How-to-build
 ```bash
 colcon_ws/src$ git clone https://github.com/107-systems/l3xz_head_ctrl
-colcon_ws$ source /opt/ros/galactic/setup.bash
+colcon_ws$ source /opt/ros/humble/setup.bash
 colcon_ws$ colcon build --packages-select l3xz_head_ctrl
 ```
 
