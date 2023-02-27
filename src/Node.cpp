@@ -23,22 +23,44 @@ namespace l3xz::head
 
 Node::Node()
 : rclcpp::Node("l3xz_head_ctrl")
-, _pan_angular_velocity_rad_per_sec{0.0f}
-, _tilt_angular_velocity_rad_per_sec{0.0f}
-, _state{State::Teleop}
+, _state{State::Init}
+, _teleop_target{}
+, _servo_actual{}
 , _prev_ctrl_loop_timepoint{std::chrono::steady_clock::now()}
 {
+  declare_parameter("pan_initial_angle_deg", 180.0f);
+  declare_parameter("pan_min_angle_deg", 170.0f);
+  declare_parameter("pan_max_angle_deg", 190.0f);
+
+  declare_parameter("tilt_initial_angle_deg", 180.0f);
+  declare_parameter("tilt_min_angle_deg", 170.0f);
+  declare_parameter("tilt_max_angle_deg", 190.0f);
+
   /* Configure subscribers and publishers. */
   _head_sub = create_subscription<geometry_msgs::msg::Twist>
     ("/l3xz/cmd_vel_head", 1,
     [this](geometry_msgs::msg::Twist::SharedPtr const msg)
     {
-      _pan_angular_velocity_rad_per_sec  = msg->angular.z;
-      _tilt_angular_velocity_rad_per_sec = msg->angular.y;
+      _teleop_target.set_angular_velocity_rps(Servo::Pan,  msg->angular.z);
+      _teleop_target.set_angular_velocity_rps(Servo::Tilt, msg->angular.y);
     });
 
+  _pan_angle_actual_sub = create_subscription<std_msgs::msg::Float32>
+    ("/l3xz/head/pan/angle/actual", 1,
+     [this](std_msgs::msg::Float32::SharedPtr const msg) { _servo_actual.set_angle_rad(Servo::Pan, msg->data); });
+
+  _tilt_angle_actual_sub = create_subscription<std_msgs::msg::Float32>
+    ("/l3xz/head/tilt/angle/actual", 1,
+     [this](std_msgs::msg::Float32::SharedPtr const msg) { _servo_actual.set_angle_rad(Servo::Tilt, msg->data); });
+
+  _pan_angle_pub      = create_publisher<std_msgs::msg::Float32>("/l3xz/head/pan/angle/target",  1);
   _pan_angle_vel_pub  = create_publisher<std_msgs::msg::Float32>("/l3xz/head/pan/angular_velocity/target",  1);
+
+  _tilt_angle_pub     = create_publisher<std_msgs::msg::Float32>("/l3xz/head/tilt/angle/target", 1);
   _tilt_angle_vel_pub = create_publisher<std_msgs::msg::Float32>("/l3xz/head/tilt/angular_velocity/target", 1);
+
+  _pan_angle_mode_pub  = create_publisher<ros2_dynamixel_bridge::msg::Mode>("/l3xz/head/pan/mode/set",  1);
+  _tilt_angle_mode_pub = create_publisher<ros2_dynamixel_bridge::msg::Mode>("/l3xz/head/tilt/mode/set", 1);
 
   /* Configure periodic control loop function. */
   _ctrl_loop_timer = create_wall_timer
@@ -65,27 +87,147 @@ void Node::ctrl_loop()
                          std::chrono::duration_cast<std::chrono::milliseconds>(ctrl_loop_rate).count());
   _prev_ctrl_loop_timepoint = now;
 
-
-  std_msgs::msg::Float32 pan_angular_velocity_msg, tilt_angular_velocity_msg;
-
+  auto next = std::make_tuple(_state,
+                              Mode::PositionControl,
+                              0.0f,
+                              0.0f,
+                              get_parameter("pan_initial_angle_deg").as_double()  * M_PI / 180.0f,
+                              get_parameter("tilt_initial_angle_deg").as_double() * M_PI / 180.0f);
   switch(_state)
   {
-    case State::Teleop:
-    {
-      pan_angular_velocity_msg.data  = _pan_angular_velocity_rad_per_sec;
-      tilt_angular_velocity_msg.data = _tilt_angular_velocity_rad_per_sec;
-    }
-    break;
+    case State::Init:   next = handle_Init();   break;
+    case State::Teleop: next = handle_Teleop(); break;
     default:
-    {
-      pan_angular_velocity_msg.data  = 0.0f;
-      tilt_angular_velocity_msg.data = 0.0f;
-    }
-    break;
+    case State::Hold:   next = handle_Hold();   break;
+  }
+  auto [next_state, next_mode, next_pan_rps, next_tilt_rps, next_pan_deg, next_tilt_deg] = next;
+  _state = next_state;
+
+  publish(next_mode, next_pan_rps, next_tilt_rps, next_pan_deg, next_tilt_deg);
+}
+
+std::tuple<Node::State, Node::Mode, float, float, float, float> Node::handle_Init()
+{
+  float const PAN_INITIAL_ANGLE_rad  = get_parameter("pan_initial_angle_deg").as_double()  * M_PI / 180.0f;
+  float const TILT_INITIAL_ANGLE_rad = get_parameter("tilt_initial_angle_deg").as_double() * M_PI / 180.0f;
+
+  auto initial_target_angle_reached = [](float const target_rad, float const actual_rad)
+  {
+    static float constexpr INITIAL_ANGLE_EPSILON_rad = 2.0f * M_PI / 180.0f;
+    return (fabs(target_rad - actual_rad) < INITIAL_ANGLE_EPSILON_rad);
+  };
+
+  if (initial_target_angle_reached(PAN_INITIAL_ANGLE_rad,  _servo_actual.angle_rad(Servo::Pan)) &&
+      initial_target_angle_reached(TILT_INITIAL_ANGLE_rad, _servo_actual.angle_rad(Servo::Tilt)))
+  {
+    RCLCPP_INFO(get_logger(), "transitioning to \"State::Hold\".");
+    return std::make_tuple(State::Hold, Mode::VelocityControl, 0.0f, 0.0f, _servo_actual.angle_rad(Servo::Pan), _servo_actual.angle_rad(Servo::Tilt));
   }
 
-  _pan_angle_vel_pub->publish(pan_angular_velocity_msg);
-  _tilt_angle_vel_pub->publish(tilt_angular_velocity_msg);
+  return std::make_tuple(State::Init, Mode::PositionControl, 0.0f, 0.0f, PAN_INITIAL_ANGLE_rad, TILT_INITIAL_ANGLE_rad);
+}
+
+std::tuple<Node::State, Node::Mode, float, float, float, float> Node::handle_Hold()
+{
+  if (_teleop_target.is_active_manual_control())
+  {
+    RCLCPP_INFO(get_logger(), "transitioning to \"State::Teleop\" due to active manual control.");
+    return std::make_tuple(State::Teleop, Mode::VelocityControl, 0.0f, 0.0f, _servo_actual.angle_rad(Servo::Pan), _servo_actual.angle_rad(Servo::Tilt));
+  }
+
+  return std::make_tuple(State::Hold, Mode::PositionControl, 0.0f, 0.0f, _servo_actual.angle_rad(Servo::Pan), _servo_actual.angle_rad(Servo::Tilt));
+}
+
+std::tuple<Node::State, Node::Mode, float, float, float, float> Node::handle_Teleop()
+{
+  /* Determine new target angular velocities for
+   * both pan and tilt servo.
+   */
+  float target_pan_ang_vel_rad_per_sec  = _teleop_target.angular_velocity_rps(Servo::Pan);
+  float target_tilt_ang_vel_rad_per_sec = _teleop_target.angular_velocity_rps(Servo::Tilt);
+
+  /* Check if we are exceeding the limits and stop
+   * servo movement.
+   */
+  static float const PAN_MIN_ANGLE_rad = get_parameter("pan_min_angle_deg").as_double() * M_PI / 180.0f;
+  static float const PAN_MAX_ANGLE_rad = get_parameter("pan_max_angle_deg").as_double() * M_PI / 180.0f;
+
+  if ((_servo_actual.angle_rad(Servo::Pan) < PAN_MIN_ANGLE_rad) && (target_pan_ang_vel_rad_per_sec < 0.0f))
+    target_pan_ang_vel_rad_per_sec = 0.0f;
+  if ((_servo_actual.angle_rad(Servo::Pan) > PAN_MAX_ANGLE_rad) && (target_pan_ang_vel_rad_per_sec > 0.0f))
+    target_pan_ang_vel_rad_per_sec = 0.0f;
+
+  static float const TILT_MIN_ANGLE_rad = get_parameter("tilt_min_angle_deg").as_double() * M_PI / 180.0f;
+  static float const TILT_MAX_ANGLE_rad = get_parameter("tilt_max_angle_deg").as_double() * M_PI / 180.0f;
+
+  if ((_servo_actual.angle_rad(Servo::Tilt) < TILT_MIN_ANGLE_rad) && (target_tilt_ang_vel_rad_per_sec < 0.0f))
+    target_tilt_ang_vel_rad_per_sec = 0.0f;
+  if ((_servo_actual.angle_rad(Servo::Tilt) > TILT_MAX_ANGLE_rad) && (target_tilt_ang_vel_rad_per_sec > 0.0f))
+    target_tilt_ang_vel_rad_per_sec = 0.0f;
+
+  /* Update the activity time-point, if we are currently actively
+   * teleoperating the robots sensor head.
+   */
+  auto const now = std::chrono::steady_clock::now();
+
+  if (_teleop_target.is_active_manual_control())
+    _prev_teleop_activity_timepoint = now;
+
+  if ((now - _prev_teleop_activity_timepoint) > std::chrono::seconds(5))
+  {
+    RCLCPP_INFO(get_logger(), "transitioning to \"State::Hold\" due to inactivity timeout on manual control.");
+    return std::make_tuple(State::Hold, Mode::PositionControl, 0.0f, 0.0f, _servo_actual.angle_rad(Servo::Pan), _servo_actual.angle_rad(Servo::Tilt));
+  }
+
+  return std::make_tuple(State::Teleop, Mode::VelocityControl, target_pan_ang_vel_rad_per_sec, target_tilt_ang_vel_rad_per_sec, _servo_actual.angle_rad(Servo::Pan), _servo_actual.angle_rad(Servo::Tilt));
+}
+
+void Node::publish(Mode const mode, float const pan_rps, float const tilt_rps, float const pan_deg, float const tilt_deg)
+{
+  if (mode == Mode::PositionControl)
+  {
+    publish_mode_PositionControl(_pan_angle_mode_pub);
+    publish_mode_PositionControl(_tilt_angle_mode_pub);
+  }
+  else
+  {
+    publish_mode_VelocityControl(_pan_angle_mode_pub);
+    publish_mode_VelocityControl(_tilt_angle_mode_pub);
+  }
+
+  publish_AngularVelocity(_pan_angle_vel_pub, pan_rps);
+  publish_AngularVelocity(_tilt_angle_vel_pub, tilt_rps);
+
+  publish_Angle(_pan_angle_pub,  pan_deg);
+  publish_Angle(_tilt_angle_pub, tilt_deg);
+}
+
+void Node::publish_AngularVelocity(rclcpp::Publisher<std_msgs::msg::Float32>::SharedPtr const pub, float const angular_velocity_rad_per_sec)
+{
+  std_msgs::msg::Float32 msg;
+  msg.data = angular_velocity_rad_per_sec;
+  pub->publish(msg);
+}
+
+void Node::publish_Angle(rclcpp::Publisher<std_msgs::msg::Float32>::SharedPtr const pub, float const angle_rad)
+{
+  std_msgs::msg::Float32 msg;
+  msg.data = angle_rad;
+  pub->publish(msg);
+}
+
+void Node::publish_mode_PositionControl(rclcpp::Publisher<ros2_dynamixel_bridge::msg::Mode>::SharedPtr const pub)
+{
+  ros2_dynamixel_bridge::msg::Mode msg;
+  msg.servo_mode = ros2_dynamixel_bridge::msg::Mode::SERVO_MODE_POSITION_CONTROL;
+  pub->publish(msg);
+}
+
+void Node::publish_mode_VelocityControl(rclcpp::Publisher<ros2_dynamixel_bridge::msg::Mode>::SharedPtr const pub)
+{
+  ros2_dynamixel_bridge::msg::Mode msg;
+  msg.servo_mode = ros2_dynamixel_bridge::msg::Mode::SERVO_MODE_VELOCITY_CONTROL;
+  pub->publish(msg);
 }
 
 /**************************************************************************************

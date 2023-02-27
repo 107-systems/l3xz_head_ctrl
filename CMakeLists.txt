@@ -8,13 +8,14 @@ find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(std_msgs REQUIRED)
 find_package(geometry_msgs REQUIRED)
+find_package(ros2_dynamixel_bridge REQUIRED)
 #######################################################################################
 include_directories(${L3XZ_HEAD_CTRL_TARGET}
   include
 )
 #######################################################################################
 add_executable(${L3XZ_HEAD_CTRL_TARGET}
-        src/Node.cpp
+  src/Node.cpp
   src/main.cpp
 )
 #######################################################################################
@@ -24,7 +25,7 @@ endif()
 #######################################################################################
 target_compile_features(${L3XZ_HEAD_CTRL_TARGET} PRIVATE cxx_std_17)
 #######################################################################################
-ament_target_dependencies(${L3XZ_HEAD_CTRL_TARGET} rclcpp geometry_msgs std_msgs)
+ament_target_dependencies(${L3XZ_HEAD_CTRL_TARGET} rclcpp geometry_msgs std_msgs ros2_dynamixel_bridge)
 #######################################################################################
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)

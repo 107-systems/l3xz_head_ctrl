@@ -40,7 +40,14 @@ jobs:
         mkdir -p ${{github.workspace}}/ros2_ws/src
         cd ${{github.workspace}}/ros2_ws
         colcon build
-        
+
+    - uses: actions/checkout@v3
+      with:
+        repository: '107-systems/ros2_dynamixel_bridge'
+        path: 'ros2_ws/src/ros2_dynamixel_bridge'
+        submodules: true
+        fetch-depth: 1
+
     - uses: actions/checkout@v3
       with:
         path: 'ros2_ws/src/l3xz_head_ctrl'

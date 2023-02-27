@@ -11,6 +11,12 @@ def generate_launch_description():
       output='screen',
       emulate_tty=True,
       parameters=[
-      ]
+        {'pan_initial_angle_deg': 180.0},
+        {'pan_min_angle_deg': 180.0 - 25.0},
+        {'pan_max_angle_deg': 180.0 + 25.0},
+        {'tilt_initial_angle_deg': 180.0},
+        {'tilt_min_angle_deg': 180.0 - 45.0},
+        {'tilt_max_angle_deg': 180.0 + 45.0},
+      ],
     )
   ])
