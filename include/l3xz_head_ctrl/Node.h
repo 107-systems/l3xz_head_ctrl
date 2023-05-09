@@ -18,6 +18,8 @@
 #include <rclcpp/rclcpp.hpp>
 
 #include <std_msgs/msg/float32.hpp>
+#include <std_msgs/msg/u_int64.hpp>
+
 #include <geometry_msgs/msg/twist.hpp>
 
 #include <ros2_dynamixel_bridge/msg/mode.hpp>
@@ -92,13 +94,22 @@ private:
     void set_angle_rad(Servo const servo, float const angle_rad) { _angle_rad_map[servo] = angle_rad; }
   };
 
+  std::chrono::steady_clock::time_point const _node_start;
+
+  rclcpp::Publisher<std_msgs::msg::UInt64>::SharedPtr _heartbeat_pub;
+  static std::chrono::milliseconds constexpr HEARTBEAT_LOOP_RATE{100};
+  rclcpp::TimerBase::SharedPtr _heartbeat_loop_timer;
+  void init_heartbeat();
+
   TeleopTarget _teleop_target;
   ServoActual _servo_actual;
 
   rclcpp::Subscription<geometry_msgs::msg::Twist>::SharedPtr _head_sub;
   rclcpp::Subscription<std_msgs::msg::Float32>::SharedPtr _pan_angle_actual_sub, _tilt_angle_actual_sub;
+  void init_sub();
   rclcpp::Publisher<std_msgs::msg::Float32>::SharedPtr _pan_angle_pub, _tilt_angle_pub, _pan_angle_vel_pub, _tilt_angle_vel_pub;
   rclcpp::Publisher<ros2_dynamixel_bridge::msg::Mode>::SharedPtr _pan_angle_mode_pub, _tilt_angle_mode_pub;
+  void init_pub();
 
   std::chrono::steady_clock::time_point _prev_ctrl_loop_timepoint;
   static std::chrono::milliseconds constexpr CTRL_LOOP_RATE{10};

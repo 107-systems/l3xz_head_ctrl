@@ -24,6 +24,7 @@ namespace l3xz::head
 Node::Node()
 : rclcpp::Node("l3xz_head_ctrl")
 , _state{State::Init}
+, _node_start{std::chrono::steady_clock::now()}
 , _teleop_target{}
 , _servo_actual{}
 , _prev_ctrl_loop_timepoint{std::chrono::steady_clock::now()}
@@ -36,23 +37,55 @@ Node::Node()
   declare_parameter("tilt_min_angle_deg", 170.0f);
   declare_parameter("tilt_max_angle_deg", 190.0f);
 
-  /* Configure subscribers and publishers. */
-  _head_sub = create_subscription<geometry_msgs::msg::Twist>
-    ("/l3xz/cmd_vel_head", 1,
+  init_heartbeat();
+  init_sub();
+  init_pub();
+
+  _ctrl_loop_timer = create_wall_timer(CTRL_LOOP_RATE, [this]() { this->ctrl_loop(); });
+
+  RCLCPP_INFO(get_logger(), "%s init complete.", get_name());
+}
+
+/**************************************************************************************
+ * PRIVATE MEMBER FUNCTIONS
+ **************************************************************************************/
+
+void Node::init_heartbeat()
+{
+  std::stringstream heartbeat_topic;
+  heartbeat_topic << "/l3xz/" << get_name() << "/heartbeat";
+  _heartbeat_pub = create_publisher<std_msgs::msg::UInt64>(heartbeat_topic.str(), 1);
+  _heartbeat_loop_timer = create_wall_timer(HEARTBEAT_LOOP_RATE,
+    [this]()
+    {
+      std_msgs::msg::UInt64 heartbeat_msg;
+      heartbeat_msg.data = std::chrono::duration_cast<std::chrono::seconds>(
+        std::chrono::steady_clock::now() - _node_start).count();
+      _heartbeat_pub->publish(heartbeat_msg);
+    });
+}
+
+void Node::init_sub()
+{
+  _head_sub = create_subscription<geometry_msgs::msg::Twist>(
+    "/l3xz/cmd_vel_head", 1,
     [this](geometry_msgs::msg::Twist::SharedPtr const msg)
     {
       _teleop_target.set_angular_velocity_rps(Servo::Pan,  msg->angular.z);
       _teleop_target.set_angular_velocity_rps(Servo::Tilt, msg->angular.y);
     });
 
-  _pan_angle_actual_sub = create_subscription<std_msgs::msg::Float32>
-    ("/l3xz/head/pan/angle/actual", 1,
-     [this](std_msgs::msg::Float32::SharedPtr const msg) { _servo_actual.set_angle_rad(Servo::Pan, msg->data); });
+  _pan_angle_actual_sub = create_subscription<std_msgs::msg::Float32>(
+    "/l3xz/head/pan/angle/actual", 1,
+    [this](std_msgs::msg::Float32::SharedPtr const msg) { _servo_actual.set_angle_rad(Servo::Pan, msg->data); });
 
-  _tilt_angle_actual_sub = create_subscription<std_msgs::msg::Float32>
-    ("/l3xz/head/tilt/angle/actual", 1,
-     [this](std_msgs::msg::Float32::SharedPtr const msg) { _servo_actual.set_angle_rad(Servo::Tilt, msg->data); });
+  _tilt_angle_actual_sub = create_subscription<std_msgs::msg::Float32>(
+    "/l3xz/head/tilt/angle/actual", 1,
+    [this](std_msgs::msg::Float32::SharedPtr const msg) { _servo_actual.set_angle_rad(Servo::Tilt, msg->data); });
+}
 
+void Node::init_pub()
+{
   _pan_angle_pub      = create_publisher<std_msgs::msg::Float32>("/l3xz/head/pan/angle/target",  1);
   _pan_angle_vel_pub  = create_publisher<std_msgs::msg::Float32>("/l3xz/head/pan/angular_velocity/target",  1);
 
@@ -61,18 +94,7 @@ Node::Node()
 
   _pan_angle_mode_pub  = create_publisher<ros2_dynamixel_bridge::msg::Mode>("/l3xz/head/pan/mode/set",  1);
   _tilt_angle_mode_pub = create_publisher<ros2_dynamixel_bridge::msg::Mode>("/l3xz/head/tilt/mode/set", 1);
-
-  /* Configure periodic control loop function. */
-  _ctrl_loop_timer = create_wall_timer
-    (std::chrono::milliseconds(CTRL_LOOP_RATE.count()),
-     [this]() { this->ctrl_loop(); });
-
-  RCLCPP_INFO(get_logger(), "node initialization complete.");
 }
-
-/**************************************************************************************
- * PRIVATE MEMBER FUNCTIONS
- **************************************************************************************/
 
 void Node::ctrl_loop()
 {
