@@ -37,19 +37,7 @@ Node::Node()
   declare_parameter("tilt_min_angle_deg", 170.0f);
   declare_parameter("tilt_max_angle_deg", 190.0f);
 
-  /* Configure heartbeat. */
-  std::stringstream heartbeat_topic;
-  heartbeat_topic << "/l3xz/" << get_name() << "/heartbeat";
-  _heartbeat_pub = create_publisher<std_msgs::msg::UInt64>(heartbeat_topic.str(), 1);
-  _heartbeat_loop_timer = create_wall_timer(
-    HEARTBEAT_LOOP_RATE,
-    [this]()
-    {
-      std_msgs::msg::UInt64 heartbeat_msg;
-      heartbeat_msg.data = std::chrono::duration_cast<std::chrono::seconds>(
-        std::chrono::steady_clock::now() - _node_start).count();
-      _heartbeat_pub->publish(heartbeat_msg);
-    });
+  init_heartbeat();
 
   /* Configure subscribers and publishers. */
   _head_sub = create_subscription<geometry_msgs::msg::Twist>
@@ -88,6 +76,21 @@ Node::Node()
 /**************************************************************************************
  * PRIVATE MEMBER FUNCTIONS
  **************************************************************************************/
+
+void Node::init_heartbeat()
+{
+  std::stringstream heartbeat_topic;
+  heartbeat_topic << "/l3xz/" << get_name() << "/heartbeat";
+  _heartbeat_pub = create_publisher<std_msgs::msg::UInt64>(heartbeat_topic.str(), 1);
+  _heartbeat_loop_timer = create_wall_timer(HEARTBEAT_LOOP_RATE,
+    [this]()
+    {
+      std_msgs::msg::UInt64 heartbeat_msg;
+      heartbeat_msg.data = std::chrono::duration_cast<std::chrono::seconds>(
+        std::chrono::steady_clock::now() - _node_start).count();
+      _heartbeat_pub->publish(heartbeat_msg);
+    });
+}
 
 void Node::ctrl_loop()
 {

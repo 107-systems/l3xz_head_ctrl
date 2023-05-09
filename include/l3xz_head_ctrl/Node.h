@@ -99,6 +99,7 @@ private:
   rclcpp::Publisher<std_msgs::msg::UInt64>::SharedPtr _heartbeat_pub;
   static std::chrono::milliseconds constexpr HEARTBEAT_LOOP_RATE{100};
   rclcpp::TimerBase::SharedPtr _heartbeat_loop_timer;
+  void init_heartbeat();
 
 
   TeleopTarget _teleop_target;
