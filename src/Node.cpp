@@ -66,11 +66,9 @@ Node::Node()
   _tilt_angle_mode_pub = create_publisher<ros2_dynamixel_bridge::msg::Mode>("/l3xz/head/tilt/mode/set", 1);
 
   /* Configure periodic control loop function. */
-  _ctrl_loop_timer = create_wall_timer
-    (std::chrono::milliseconds(CTRL_LOOP_RATE.count()),
-     [this]() { this->ctrl_loop(); });
+  _ctrl_loop_timer = create_wall_timer(CTRL_LOOP_RATE, [this]() { this->ctrl_loop(); });
 
-  RCLCPP_INFO(get_logger(), "node initialization complete.");
+  RCLCPP_INFO(get_logger(), "%s init complete.", get_name());
 }
 
 /**************************************************************************************
