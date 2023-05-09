@@ -38,34 +38,9 @@ Node::Node()
   declare_parameter("tilt_max_angle_deg", 190.0f);
 
   init_heartbeat();
+  init_sub();
+  init_pub();
 
-  /* Configure subscribers and publishers. */
-  _head_sub = create_subscription<geometry_msgs::msg::Twist>
-    ("/l3xz/cmd_vel_head", 1,
-    [this](geometry_msgs::msg::Twist::SharedPtr const msg)
-    {
-      _teleop_target.set_angular_velocity_rps(Servo::Pan,  msg->angular.z);
-      _teleop_target.set_angular_velocity_rps(Servo::Tilt, msg->angular.y);
-    });
-
-  _pan_angle_actual_sub = create_subscription<std_msgs::msg::Float32>
-    ("/l3xz/head/pan/angle/actual", 1,
-     [this](std_msgs::msg::Float32::SharedPtr const msg) { _servo_actual.set_angle_rad(Servo::Pan, msg->data); });
-
-  _tilt_angle_actual_sub = create_subscription<std_msgs::msg::Float32>
-    ("/l3xz/head/tilt/angle/actual", 1,
-     [this](std_msgs::msg::Float32::SharedPtr const msg) { _servo_actual.set_angle_rad(Servo::Tilt, msg->data); });
-
-  _pan_angle_pub      = create_publisher<std_msgs::msg::Float32>("/l3xz/head/pan/angle/target",  1);
-  _pan_angle_vel_pub  = create_publisher<std_msgs::msg::Float32>("/l3xz/head/pan/angular_velocity/target",  1);
-
-  _tilt_angle_pub     = create_publisher<std_msgs::msg::Float32>("/l3xz/head/tilt/angle/target", 1);
-  _tilt_angle_vel_pub = create_publisher<std_msgs::msg::Float32>("/l3xz/head/tilt/angular_velocity/target", 1);
-
-  _pan_angle_mode_pub  = create_publisher<ros2_dynamixel_bridge::msg::Mode>("/l3xz/head/pan/mode/set",  1);
-  _tilt_angle_mode_pub = create_publisher<ros2_dynamixel_bridge::msg::Mode>("/l3xz/head/tilt/mode/set", 1);
-
-  /* Configure periodic control loop function. */
   _ctrl_loop_timer = create_wall_timer(CTRL_LOOP_RATE, [this]() { this->ctrl_loop(); });
 
   RCLCPP_INFO(get_logger(), "%s init complete.", get_name());
@@ -88,6 +63,37 @@ void Node::init_heartbeat()
         std::chrono::steady_clock::now() - _node_start).count();
       _heartbeat_pub->publish(heartbeat_msg);
     });
+}
+
+void Node::init_sub()
+{
+  _head_sub = create_subscription<geometry_msgs::msg::Twist>(
+    "/l3xz/cmd_vel_head", 1,
+    [this](geometry_msgs::msg::Twist::SharedPtr const msg)
+    {
+      _teleop_target.set_angular_velocity_rps(Servo::Pan,  msg->angular.z);
+      _teleop_target.set_angular_velocity_rps(Servo::Tilt, msg->angular.y);
+    });
+
+  _pan_angle_actual_sub = create_subscription<std_msgs::msg::Float32>(
+    "/l3xz/head/pan/angle/actual", 1,
+    [this](std_msgs::msg::Float32::SharedPtr const msg) { _servo_actual.set_angle_rad(Servo::Pan, msg->data); });
+
+  _tilt_angle_actual_sub = create_subscription<std_msgs::msg::Float32>(
+    "/l3xz/head/tilt/angle/actual", 1,
+    [this](std_msgs::msg::Float32::SharedPtr const msg) { _servo_actual.set_angle_rad(Servo::Tilt, msg->data); });
+}
+
+void Node::init_pub()
+{
+  _pan_angle_pub      = create_publisher<std_msgs::msg::Float32>("/l3xz/head/pan/angle/target",  1);
+  _pan_angle_vel_pub  = create_publisher<std_msgs::msg::Float32>("/l3xz/head/pan/angular_velocity/target",  1);
+
+  _tilt_angle_pub     = create_publisher<std_msgs::msg::Float32>("/l3xz/head/tilt/angle/target", 1);
+  _tilt_angle_vel_pub = create_publisher<std_msgs::msg::Float32>("/l3xz/head/tilt/angular_velocity/target", 1);
+
+  _pan_angle_mode_pub  = create_publisher<ros2_dynamixel_bridge::msg::Mode>("/l3xz/head/pan/mode/set",  1);
+  _tilt_angle_mode_pub = create_publisher<ros2_dynamixel_bridge::msg::Mode>("/l3xz/head/tilt/mode/set", 1);
 }
 
 void Node::ctrl_loop()
