@@ -22,6 +22,8 @@
 
 #include <geometry_msgs/msg/twist.hpp>
 
+#include <ros2_heartbeat/Publisher.h>
+
 #include <ros2_dynamixel_bridge/msg/mode.hpp>
 
 /**************************************************************************************
@@ -94,11 +96,8 @@ private:
     void set_angle_rad(Servo const servo, float const angle_rad) { _angle_rad_map[servo] = angle_rad; }
   };
 
-  std::chrono::steady_clock::time_point const _node_start;
-
-  rclcpp::Publisher<std_msgs::msg::UInt64>::SharedPtr _heartbeat_pub;
   static std::chrono::milliseconds constexpr HEARTBEAT_LOOP_RATE{100};
-  rclcpp::TimerBase::SharedPtr _heartbeat_loop_timer;
+  heartbeat::Publisher::SharedPtr _heartbeat_pub;
   void init_heartbeat();
 
   TeleopTarget _teleop_target;
