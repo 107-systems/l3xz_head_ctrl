@@ -102,6 +102,7 @@ private:
 
   TeleopTarget _teleop_target;
   ServoActual _servo_actual;
+  float _servo_pan_hold_rad, _servo_tilt_hold_rad;
 
   rclcpp::Subscription<geometry_msgs::msg::Twist>::SharedPtr _head_sub;
   rclcpp::Subscription<std_msgs::msg::Float32>::SharedPtr _pan_angle_actual_sub, _tilt_angle_actual_sub;

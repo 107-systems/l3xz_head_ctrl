@@ -26,6 +26,8 @@ Node::Node()
 , _state{State::Init}
 , _teleop_target{}
 , _servo_actual{}
+, _servo_pan_hold_rad{0.0f}
+, _servo_tilt_hold_rad{0.0f}
 , _prev_ctrl_loop_timepoint{std::chrono::steady_clock::now()}
 {
   declare_parameter("pan_initial_angle_deg", 180.0f);
@@ -135,7 +137,11 @@ std::tuple<Node::State, Node::Mode, float, float, float, float> Node::handle_Ini
       initial_target_angle_reached(TILT_INITIAL_ANGLE_rad, _servo_actual.angle_rad(Servo::Tilt)))
   {
     RCLCPP_INFO(get_logger(), "transitioning to \"State::Hold\".");
-    return std::make_tuple(State::Hold, Mode::PositionControl, 0.0f, 0.0f, _servo_actual.angle_rad(Servo::Pan), _servo_actual.angle_rad(Servo::Tilt));
+
+    _servo_pan_hold_rad  = _servo_actual.angle_rad(Servo::Pan);
+    _servo_tilt_hold_rad = _servo_actual.angle_rad(Servo::Tilt);
+
+    return std::make_tuple(State::Hold, Mode::PositionControl, 0.0f, 0.0f, _servo_pan_hold_rad, _servo_tilt_hold_rad);
   }
 
   return std::make_tuple(State::Init, Mode::PositionControl, 0.0f, 0.0f, PAN_INITIAL_ANGLE_rad, TILT_INITIAL_ANGLE_rad);
@@ -146,10 +152,10 @@ std::tuple<Node::State, Node::Mode, float, float, float, float> Node::handle_Hol
   if (_teleop_target.is_active_manual_control())
   {
     RCLCPP_INFO(get_logger(), "transitioning to \"State::Teleop\" due to active manual control.");
-    return std::make_tuple(State::Teleop, Mode::VelocityControl, 0.0f, 0.0f, _servo_actual.angle_rad(Servo::Pan), _servo_actual.angle_rad(Servo::Tilt));
+    return std::make_tuple(State::Teleop, Mode::VelocityControl, 0.0f, 0.0f, _servo_pan_hold_rad, _servo_tilt_hold_rad);
   }
 
-  return std::make_tuple(State::Hold, Mode::PositionControl, 0.0f, 0.0f, _servo_actual.angle_rad(Servo::Pan), _servo_actual.angle_rad(Servo::Tilt));
+  return std::make_tuple(State::Hold, Mode::PositionControl, 0.0f, 0.0f, _servo_pan_hold_rad, _servo_tilt_hold_rad);
 }
 
 std::tuple<Node::State, Node::Mode, float, float, float, float> Node::handle_Teleop()
@@ -190,7 +196,11 @@ std::tuple<Node::State, Node::Mode, float, float, float, float> Node::handle_Tel
   if ((now - _prev_teleop_activity_timepoint) > std::chrono::seconds(5))
   {
     RCLCPP_INFO(get_logger(), "transitioning to \"State::Hold\" due to inactivity timeout on manual control.");
-    return std::make_tuple(State::Hold, Mode::PositionControl, 0.0f, 0.0f, _servo_actual.angle_rad(Servo::Pan), _servo_actual.angle_rad(Servo::Tilt));
+
+    _servo_pan_hold_rad  = _servo_actual.angle_rad(Servo::Pan);
+    _servo_tilt_hold_rad = _servo_actual.angle_rad(Servo::Tilt);
+
+    return std::make_tuple(State::Hold, Mode::PositionControl, 0.0f, 0.0f, _servo_pan_hold_rad, _servo_tilt_hold_rad);
   }
 
   return std::make_tuple(State::Teleop, Mode::VelocityControl, target_pan_ang_vel_rad_per_sec, target_tilt_ang_vel_rad_per_sec, _servo_actual.angle_rad(Servo::Pan), _servo_actual.angle_rad(Servo::Tilt));
