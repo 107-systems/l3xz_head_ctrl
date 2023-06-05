@@ -135,7 +135,7 @@ std::tuple<Node::State, Node::Mode, float, float, float, float> Node::handle_Ini
       initial_target_angle_reached(TILT_INITIAL_ANGLE_rad, _servo_actual.angle_rad(Servo::Tilt)))
   {
     RCLCPP_INFO(get_logger(), "transitioning to \"State::Hold\".");
-    return std::make_tuple(State::Hold, Mode::VelocityControl, 0.0f, 0.0f, _servo_actual.angle_rad(Servo::Pan), _servo_actual.angle_rad(Servo::Tilt));
+    return std::make_tuple(State::Hold, Mode::PositionControl, 0.0f, 0.0f, _servo_actual.angle_rad(Servo::Pan), _servo_actual.angle_rad(Servo::Tilt));
   }
 
   return std::make_tuple(State::Init, Mode::PositionControl, 0.0f, 0.0f, PAN_INITIAL_ANGLE_rad, TILT_INITIAL_ANGLE_rad);
