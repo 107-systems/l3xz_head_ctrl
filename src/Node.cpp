@@ -26,15 +26,17 @@ Node::Node()
 , _state{State::Init}
 , _teleop_target{}
 , _servo_actual{}
+, _servo_pan_hold_rad{0.0f}
+, _servo_tilt_hold_rad{0.0f}
 , _prev_ctrl_loop_timepoint{std::chrono::steady_clock::now()}
 {
   declare_parameter("pan_initial_angle_deg", 180.0f);
   declare_parameter("pan_min_angle_deg", 170.0f);
   declare_parameter("pan_max_angle_deg", 190.0f);
 
-  declare_parameter("tilt_initial_angle_deg", 180.0f);
-  declare_parameter("tilt_min_angle_deg", 170.0f);
-  declare_parameter("tilt_max_angle_deg", 190.0f);
+  declare_parameter("tilt_initial_angle_deg", 90.0f);
+  declare_parameter("tilt_min_angle_deg", 80.0f);
+  declare_parameter("tilt_max_angle_deg", 100.0f);
 
   init_heartbeat();
   init_sub();
@@ -114,10 +116,10 @@ void Node::ctrl_loop()
     default:
     case State::Hold:   next = handle_Hold();   break;
   }
-  auto [next_state, next_mode, next_pan_rps, next_tilt_rps, next_pan_deg, next_tilt_deg] = next;
+  auto [next_state, next_mode, next_pan_rps, next_tilt_rps, next_pan_rad, next_tilt_rad] = next;
   _state = next_state;
 
-  publish(next_mode, next_pan_rps, next_tilt_rps, next_pan_deg, next_tilt_deg);
+  publish(next_mode, next_pan_rps, next_tilt_rps, next_pan_rad, next_tilt_rad);
 }
 
 std::tuple<Node::State, Node::Mode, float, float, float, float> Node::handle_Init()
@@ -135,7 +137,11 @@ std::tuple<Node::State, Node::Mode, float, float, float, float> Node::handle_Ini
       initial_target_angle_reached(TILT_INITIAL_ANGLE_rad, _servo_actual.angle_rad(Servo::Tilt)))
   {
     RCLCPP_INFO(get_logger(), "transitioning to \"State::Hold\".");
-    return std::make_tuple(State::Hold, Mode::VelocityControl, 0.0f, 0.0f, _servo_actual.angle_rad(Servo::Pan), _servo_actual.angle_rad(Servo::Tilt));
+
+    _servo_pan_hold_rad  = _servo_actual.angle_rad(Servo::Pan);
+    _servo_tilt_hold_rad = _servo_actual.angle_rad(Servo::Tilt);
+
+    return std::make_tuple(State::Hold, Mode::PositionControl, 0.0f, 0.0f, _servo_pan_hold_rad, _servo_tilt_hold_rad);
   }
 
   return std::make_tuple(State::Init, Mode::PositionControl, 0.0f, 0.0f, PAN_INITIAL_ANGLE_rad, TILT_INITIAL_ANGLE_rad);
@@ -146,10 +152,10 @@ std::tuple<Node::State, Node::Mode, float, float, float, float> Node::handle_Hol
   if (_teleop_target.is_active_manual_control())
   {
     RCLCPP_INFO(get_logger(), "transitioning to \"State::Teleop\" due to active manual control.");
-    return std::make_tuple(State::Teleop, Mode::VelocityControl, 0.0f, 0.0f, _servo_actual.angle_rad(Servo::Pan), _servo_actual.angle_rad(Servo::Tilt));
+    return std::make_tuple(State::Teleop, Mode::VelocityControl, 0.0f, 0.0f, _servo_pan_hold_rad, _servo_tilt_hold_rad);
   }
 
-  return std::make_tuple(State::Hold, Mode::PositionControl, 0.0f, 0.0f, _servo_actual.angle_rad(Servo::Pan), _servo_actual.angle_rad(Servo::Tilt));
+  return std::make_tuple(State::Hold, Mode::PositionControl, 0.0f, 0.0f, _servo_pan_hold_rad, _servo_tilt_hold_rad);
 }
 
 std::tuple<Node::State, Node::Mode, float, float, float, float> Node::handle_Teleop()
@@ -190,13 +196,17 @@ std::tuple<Node::State, Node::Mode, float, float, float, float> Node::handle_Tel
   if ((now - _prev_teleop_activity_timepoint) > std::chrono::seconds(5))
   {
     RCLCPP_INFO(get_logger(), "transitioning to \"State::Hold\" due to inactivity timeout on manual control.");
-    return std::make_tuple(State::Hold, Mode::PositionControl, 0.0f, 0.0f, _servo_actual.angle_rad(Servo::Pan), _servo_actual.angle_rad(Servo::Tilt));
+
+    _servo_pan_hold_rad  = _servo_actual.angle_rad(Servo::Pan);
+    _servo_tilt_hold_rad = _servo_actual.angle_rad(Servo::Tilt);
+
+    return std::make_tuple(State::Hold, Mode::PositionControl, 0.0f, 0.0f, _servo_pan_hold_rad, _servo_tilt_hold_rad);
   }
 
   return std::make_tuple(State::Teleop, Mode::VelocityControl, target_pan_ang_vel_rad_per_sec, target_tilt_ang_vel_rad_per_sec, _servo_actual.angle_rad(Servo::Pan), _servo_actual.angle_rad(Servo::Tilt));
 }
 
-void Node::publish(Mode const mode, float const pan_rps, float const tilt_rps, float const pan_deg, float const tilt_deg)
+void Node::publish(Mode const mode, float const pan_rps, float const tilt_rps, float const pan_rad, float const tilt_rad)
 {
   if (mode == Mode::PositionControl)
   {
@@ -212,8 +222,8 @@ void Node::publish(Mode const mode, float const pan_rps, float const tilt_rps, f
   publish_AngularVelocity(_pan_angle_vel_pub, pan_rps);
   publish_AngularVelocity(_tilt_angle_vel_pub, tilt_rps);
 
-  publish_Angle(_pan_angle_pub,  pan_deg);
-  publish_Angle(_tilt_angle_pub, tilt_deg);
+  publish_Angle(_pan_angle_pub,  pan_rad);
+  publish_Angle(_tilt_angle_pub, tilt_rad);
 }
 
 void Node::publish_AngularVelocity(rclcpp::Publisher<std_msgs::msg::Float32>::SharedPtr const pub, float const angular_velocity_rad_per_sec)

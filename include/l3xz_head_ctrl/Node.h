@@ -102,6 +102,7 @@ private:
 
   TeleopTarget _teleop_target;
   ServoActual _servo_actual;
+  float _servo_pan_hold_rad, _servo_tilt_hold_rad;
 
   rclcpp::Subscription<geometry_msgs::msg::Twist>::SharedPtr _head_sub;
   rclcpp::Subscription<std_msgs::msg::Float32>::SharedPtr _pan_angle_actual_sub, _tilt_angle_actual_sub;
@@ -121,7 +122,7 @@ private:
   std::tuple<State, Mode, float, float, float, float> handle_Hold();
   std::tuple<State, Mode, float, float, float, float> handle_Teleop();
 
-  void publish(Mode const mode, float const pan_rps, float const tilt_rps, float const deg, float const tilt_deg);
+  void publish(Mode const mode, float const pan_rps, float const tilt_rps, float const pan_rad, float const tilt_rad);
 
   static void publish_AngularVelocity     (rclcpp::Publisher<std_msgs::msg::Float32>::SharedPtr const pub, float const angular_velocity_rad_per_sec);
   static void publish_Angle               (rclcpp::Publisher<std_msgs::msg::Float32>::SharedPtr const pub, float const angle_rad);

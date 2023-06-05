@@ -51,6 +51,6 @@ ros2 launch l3xz_head_ctrl head_ctrl.py
 | `pan_servo_initial_angle`  |  180.0  | Initial angle of the pan servo after startup / deg.  |
 |   `pan_servo_min_angle`    |  170.0  | Min. angle of then pan servo / deg.                  |
 |   `pan_servo_max_angle`    |  190.0  | Max. angle of then pan servo / deg.                  |
-| `tilt_servo_initial_angle` |  180.0  | Initial angle of the tilt servo after startup / deg. |
-|   `tilt_servo_min_angle`   |  170.0  | Min. angle of then tilt servo / deg.                 |
-|   `tilt_servo_max_angle`   |  190.0  | Min. angle of then tilt servo / deg.                 |
+| `tilt_servo_initial_angle` |  90.0   | Initial angle of the tilt servo after startup / deg. |
+|   `tilt_servo_min_angle`   |  80.0   | Min. angle of then tilt servo / deg.                 |
+|   `tilt_servo_max_angle`   |  100.0  | Min. angle of then tilt servo / deg.                 |
