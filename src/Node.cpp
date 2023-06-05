@@ -32,9 +32,9 @@ Node::Node()
   declare_parameter("pan_min_angle_deg", 170.0f);
   declare_parameter("pan_max_angle_deg", 190.0f);
 
-  declare_parameter("tilt_initial_angle_deg", 180.0f);
-  declare_parameter("tilt_min_angle_deg", 170.0f);
-  declare_parameter("tilt_max_angle_deg", 190.0f);
+  declare_parameter("tilt_initial_angle_deg", 90.0f);
+  declare_parameter("tilt_min_angle_deg", 80.0f);
+  declare_parameter("tilt_max_angle_deg", 100.0f);
 
   init_heartbeat();
   init_sub();
