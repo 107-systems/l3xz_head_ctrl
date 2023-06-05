@@ -114,10 +114,10 @@ void Node::ctrl_loop()
     default:
     case State::Hold:   next = handle_Hold();   break;
   }
-  auto [next_state, next_mode, next_pan_rps, next_tilt_rps, next_pan_deg, next_tilt_deg] = next;
+  auto [next_state, next_mode, next_pan_rps, next_tilt_rps, next_pan_rad, next_tilt_rad] = next;
   _state = next_state;
 
-  publish(next_mode, next_pan_rps, next_tilt_rps, next_pan_deg, next_tilt_deg);
+  publish(next_mode, next_pan_rps, next_tilt_rps, next_pan_rad, next_tilt_rad);
 }
 
 std::tuple<Node::State, Node::Mode, float, float, float, float> Node::handle_Init()
@@ -196,7 +196,7 @@ std::tuple<Node::State, Node::Mode, float, float, float, float> Node::handle_Tel
   return std::make_tuple(State::Teleop, Mode::VelocityControl, target_pan_ang_vel_rad_per_sec, target_tilt_ang_vel_rad_per_sec, _servo_actual.angle_rad(Servo::Pan), _servo_actual.angle_rad(Servo::Tilt));
 }
 
-void Node::publish(Mode const mode, float const pan_rps, float const tilt_rps, float const pan_deg, float const tilt_deg)
+void Node::publish(Mode const mode, float const pan_rps, float const tilt_rps, float const pan_rad, float const tilt_rad)
 {
   if (mode == Mode::PositionControl)
   {
@@ -212,8 +212,8 @@ void Node::publish(Mode const mode, float const pan_rps, float const tilt_rps, f
   publish_AngularVelocity(_pan_angle_vel_pub, pan_rps);
   publish_AngularVelocity(_tilt_angle_vel_pub, tilt_rps);
 
-  publish_Angle(_pan_angle_pub,  pan_deg);
-  publish_Angle(_tilt_angle_pub, tilt_deg);
+  publish_Angle(_pan_angle_pub,  pan_rad);
+  publish_Angle(_tilt_angle_pub, tilt_rad);
 }
 
 void Node::publish_AngularVelocity(rclcpp::Publisher<std_msgs::msg::Float32>::SharedPtr const pub, float const angular_velocity_rad_per_sec)
