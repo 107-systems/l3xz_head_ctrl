@@ -14,9 +14,9 @@ def generate_launch_description():
         {'pan_initial_angle_deg': 180.0},
         {'pan_min_angle_deg': 180.0 - 25.0},
         {'pan_max_angle_deg': 180.0 + 25.0},
-        {'tilt_initial_angle_deg': 0.0},
-        {'tilt_min_angle_deg': 0.0 - 45.0},
-        {'tilt_max_angle_deg': 0.0 + 45.0},
+        {'tilt_initial_angle_deg': 90.0},
+        {'tilt_min_angle_deg': 90.0 - 45.0},
+        {'tilt_max_angle_deg': 90.0 + 45.0},
       ],
     )
   ])
