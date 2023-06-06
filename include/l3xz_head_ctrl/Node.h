@@ -45,7 +45,7 @@ public:
 private:
   enum class State
   {
-    Init, Hold, Teleop
+    Init, Startup, Hold, Teleop
   };
   State _state;
 
@@ -121,6 +121,7 @@ private:
   std::chrono::steady_clock::time_point _prev_teleop_activity_timepoint;
 
   std::tuple<State, Mode, float, float, float, float> handle_Init();
+  std::tuple<State, Mode, float, float, float, float> handle_Startup();
   std::tuple<State, Mode, float, float, float, float> handle_Hold();
   std::tuple<State, Mode, float, float, float, float> handle_Teleop();
 

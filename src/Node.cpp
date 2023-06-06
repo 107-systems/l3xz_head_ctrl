@@ -116,40 +116,46 @@ void Node::ctrl_loop()
   _prev_ctrl_loop_timepoint = now;
 
 
-  if (!_opt_last_teleop_msg.has_value()) {
-    RCLCPP_WARN_THROTTLE(get_logger(), *get_clock(), 2000, "no teleop message has been received yet.");
-    return;
-  }
-  if (!_opt_last_servo_pan_msg.has_value()) {
-    RCLCPP_WARN_THROTTLE(get_logger(), *get_clock(), 2000, "no pan actual angle message has been received yet.");
-    return;
-  }
-  if (!_opt_last_servo_tilt_msg.has_value()) {
-    RCLCPP_WARN_THROTTLE(get_logger(), *get_clock(), 2000, "no tilt actual angle message has been received yet.");
-    return;
-  }
-
-
   auto next = std::make_tuple(_state,
                               Mode::PositionControl,
                               0.0f,
                               0.0f,
                               get_parameter("pan_initial_angle_deg").as_double()  * M_PI / 180.0f,
                               get_parameter("tilt_initial_angle_deg").as_double() * M_PI / 180.0f);
+
   switch(_state)
   {
-    case State::Init:   next = handle_Init();   break;
-    case State::Teleop: next = handle_Teleop(); break;
+    case State::Init:    next = handle_Init();    break;
+    case State::Startup: next = handle_Startup(); break;
+    case State::Teleop:  next = handle_Teleop();  break;
     default:
-    case State::Hold:   next = handle_Hold();   break;
+    case State::Hold:    next = handle_Hold();    break;
   }
   auto [next_state, next_mode, next_pan_rps, next_tilt_rps, next_pan_rad, next_tilt_rad] = next;
   _state = next_state;
 
-  publish(next_mode, next_pan_rps, next_tilt_rps, next_pan_rad, next_tilt_rad);
+  /* Only start publishing messages if all preconditions are fulfilled. */
+  if (_state != State::Init)
+    publish(next_mode, next_pan_rps, next_tilt_rps, next_pan_rad, next_tilt_rad);
 }
 
 std::tuple<Node::State, Node::Mode, float, float, float, float> Node::handle_Init()
+{
+  if (!_opt_last_teleop_msg.has_value())
+    return std::make_tuple(State::Init, Mode::PositionControl, 0.0f, 0.0f, 0.0f, 0.0f);
+
+  if (!_opt_last_servo_pan_msg.has_value())
+    return std::make_tuple(State::Init, Mode::PositionControl, 0.0f, 0.0f, 0.0f, 0.0f);
+
+  if (!_opt_last_servo_tilt_msg.has_value())
+    return std::make_tuple(State::Init, Mode::PositionControl, 0.0f, 0.0f, 0.0f, 0.0f);
+
+  /* We have valid messages from all topics, let's get active. */
+  RCLCPP_INFO(get_logger(), "State::Init -> State::Startup");
+  return std::make_tuple(State::Startup, Mode::PositionControl, 0.0f, 0.0f, 0.0f, 0.0f);
+}
+
+std::tuple<Node::State, Node::Mode, float, float, float, float> Node::handle_Startup()
 {
   float const PAN_INITIAL_ANGLE_rad  = get_parameter("pan_initial_angle_deg").as_double()  * M_PI / 180.0f;
   float const TILT_INITIAL_ANGLE_rad = get_parameter("tilt_initial_angle_deg").as_double() * M_PI / 180.0f;
@@ -163,7 +169,7 @@ std::tuple<Node::State, Node::Mode, float, float, float, float> Node::handle_Ini
   if (initial_target_angle_reached(PAN_INITIAL_ANGLE_rad,  _servo_actual.angle_rad(Servo::Pan)) &&
       initial_target_angle_reached(TILT_INITIAL_ANGLE_rad, _servo_actual.angle_rad(Servo::Tilt)))
   {
-    RCLCPP_INFO(get_logger(), "transitioning to \"State::Hold\".");
+    RCLCPP_INFO(get_logger(), "State::Startup -> State::Hold");
 
     _servo_pan_hold_rad  = _servo_actual.angle_rad(Servo::Pan);
     _servo_tilt_hold_rad = _servo_actual.angle_rad(Servo::Tilt);
@@ -171,14 +177,14 @@ std::tuple<Node::State, Node::Mode, float, float, float, float> Node::handle_Ini
     return std::make_tuple(State::Hold, Mode::PositionControl, 0.0f, 0.0f, _servo_pan_hold_rad, _servo_tilt_hold_rad);
   }
 
-  return std::make_tuple(State::Init, Mode::PositionControl, 0.0f, 0.0f, PAN_INITIAL_ANGLE_rad, TILT_INITIAL_ANGLE_rad);
+  return std::make_tuple(State::Startup, Mode::PositionControl, 0.0f, 0.0f, PAN_INITIAL_ANGLE_rad, TILT_INITIAL_ANGLE_rad);
 }
 
 std::tuple<Node::State, Node::Mode, float, float, float, float> Node::handle_Hold()
 {
   if (_teleop_target.is_active_manual_control())
   {
-    RCLCPP_INFO(get_logger(), "transitioning to \"State::Teleop\" due to active manual control.");
+    RCLCPP_INFO(get_logger(), "State::Hold -> State::Teleop due to active manual control.");
     return std::make_tuple(State::Teleop, Mode::VelocityControl, 0.0f, 0.0f, _servo_pan_hold_rad, _servo_tilt_hold_rad);
   }
 
@@ -222,7 +228,7 @@ std::tuple<Node::State, Node::Mode, float, float, float, float> Node::handle_Tel
 
   if ((now - _prev_teleop_activity_timepoint) > std::chrono::seconds(5))
   {
-    RCLCPP_INFO(get_logger(), "transitioning to \"State::Hold\" due to inactivity timeout on manual control.");
+    RCLCPP_INFO(get_logger(), "State::Teleop -> State::Teleop due to inactivity timeout on manual control.");
 
     _servo_pan_hold_rad  = _servo_actual.angle_rad(Servo::Pan);
     _servo_tilt_hold_rad = _servo_actual.angle_rad(Servo::Tilt);
@@ -252,6 +258,8 @@ void Node::publish(Mode const mode, float const pan_rps, float const tilt_rps, f
   static float const PAN_MIN_ANGLE_rad = get_parameter("pan_min_angle_deg").as_double() * M_PI / 180.0f;
   static float const PAN_MAX_ANGLE_rad = get_parameter("pan_max_angle_deg").as_double() * M_PI / 180.0f;
 
+  RCLCPP_DEBUG(get_logger(), "pan_rad = %0.2f, pan_max = %0.2f, pan_min = %0.2f", pan_rad, PAN_MAX_ANGLE_rad, PAN_MIN_ANGLE_rad);
+
   if (pan_rad > PAN_MAX_ANGLE_rad)
     publish_Angle(_pan_angle_pub, PAN_MAX_ANGLE_rad);
   else if (pan_rad < PAN_MIN_ANGLE_rad)
@@ -263,9 +271,11 @@ void Node::publish(Mode const mode, float const pan_rps, float const tilt_rps, f
   static float const TILT_MIN_ANGLE_rad = get_parameter("tilt_min_angle_deg").as_double() * M_PI / 180.0f;
   static float const TILT_MAX_ANGLE_rad = get_parameter("tilt_max_angle_deg").as_double() * M_PI / 180.0f;
 
-  if (tilt_rad > PAN_MAX_ANGLE_rad)
+  RCLCPP_DEBUG(get_logger(), "tilt_rad = %0.2f, tilt_max = %0.2f, tilt_min = %0.2f", tilt_rad, TILT_MAX_ANGLE_rad, TILT_MIN_ANGLE_rad);
+
+  if (tilt_rad > TILT_MAX_ANGLE_rad)
     publish_Angle(_tilt_angle_pub, TILT_MAX_ANGLE_rad);
-  else if (tilt_rad < PAN_MIN_ANGLE_rad)
+  else if (tilt_rad < TILT_MIN_ANGLE_rad)
     publish_Angle(_tilt_angle_pub, TILT_MIN_ANGLE_rad);
   else
     publish_Angle(_tilt_angle_pub, tilt_rad);
