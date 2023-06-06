@@ -222,8 +222,26 @@ void Node::publish(Mode const mode, float const pan_rps, float const tilt_rps, f
   publish_AngularVelocity(_pan_angle_vel_pub, pan_rps);
   publish_AngularVelocity(_tilt_angle_vel_pub, tilt_rps);
 
-  publish_Angle(_pan_angle_pub,  pan_rad);
-  publish_Angle(_tilt_angle_pub, tilt_rad);
+  static float const PAN_MIN_ANGLE_rad = get_parameter("pan_min_angle_deg").as_double() * M_PI / 180.0f;
+  static float const PAN_MAX_ANGLE_rad = get_parameter("pan_max_angle_deg").as_double() * M_PI / 180.0f;
+
+  if (pan_rad > PAN_MAX_ANGLE_rad)
+    publish_Angle(_pan_angle_pub, PAN_MAX_ANGLE_rad);
+  else if (pan_rad < PAN_MIN_ANGLE_rad)
+    publish_Angle(_pan_angle_pub, PAN_MIN_ANGLE_rad);
+  else
+    publish_Angle(_pan_angle_pub, pan_rad);
+
+
+  static float const TILT_MIN_ANGLE_rad = get_parameter("tilt_min_angle_deg").as_double() * M_PI / 180.0f;
+  static float const TILT_MAX_ANGLE_rad = get_parameter("tilt_max_angle_deg").as_double() * M_PI / 180.0f;
+
+  if (tilt_rad > PAN_MAX_ANGLE_rad)
+    publish_Angle(_tilt_angle_pub, TILT_MAX_ANGLE_rad);
+  else if (tilt_rad < PAN_MIN_ANGLE_rad)
+    publish_Angle(_tilt_angle_pub, TILT_MIN_ANGLE_rad);
+  else
+    publish_Angle(_tilt_angle_pub, tilt_rad);
 }
 
 void Node::publish_AngularVelocity(rclcpp::Publisher<std_msgs::msg::Float32>::SharedPtr const pub, float const angular_velocity_rad_per_sec)
