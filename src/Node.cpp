@@ -25,7 +25,10 @@ Node::Node()
 : rclcpp::Node("l3xz_head_ctrl")
 , _state{State::Init}
 , _teleop_target{}
+, _opt_last_teleop_msg{std::nullopt}
 , _servo_actual{}
+, _opt_last_servo_pan_msg{std::nullopt}
+, _opt_last_servo_tilt_msg{std::nullopt}
 , _servo_pan_hold_rad{0.0f}
 , _servo_tilt_hold_rad{0.0f}
 , _prev_ctrl_loop_timepoint{std::chrono::steady_clock::now()}
@@ -65,17 +68,26 @@ void Node::init_sub()
     "/l3xz/cmd_vel_head", 1,
     [this](geometry_msgs::msg::Twist::SharedPtr const msg)
     {
+      _opt_last_teleop_msg = std::chrono::steady_clock::now();
       _teleop_target.set_angular_velocity_rps(Servo::Pan,  msg->angular.z);
       _teleop_target.set_angular_velocity_rps(Servo::Tilt, msg->angular.y);
     });
 
   _pan_angle_actual_sub = create_subscription<std_msgs::msg::Float32>(
     "/l3xz/head/pan/angle/actual", 1,
-    [this](std_msgs::msg::Float32::SharedPtr const msg) { _servo_actual.set_angle_rad(Servo::Pan, msg->data); });
+    [this](std_msgs::msg::Float32::SharedPtr const msg)
+    {
+      _opt_last_servo_pan_msg = std::chrono::steady_clock::now();
+      _servo_actual.set_angle_rad(Servo::Pan, msg->data);
+    });
 
   _tilt_angle_actual_sub = create_subscription<std_msgs::msg::Float32>(
     "/l3xz/head/tilt/angle/actual", 1,
-    [this](std_msgs::msg::Float32::SharedPtr const msg) { _servo_actual.set_angle_rad(Servo::Tilt, msg->data); });
+    [this](std_msgs::msg::Float32::SharedPtr const msg)
+    {
+      _opt_last_servo_tilt_msg = std::chrono::steady_clock::now();
+      _servo_actual.set_angle_rad(Servo::Tilt, msg->data);
+    });
 }
 
 void Node::init_pub()
@@ -102,6 +114,21 @@ void Node::ctrl_loop()
                          CTRL_LOOP_RATE.count(),
                          std::chrono::duration_cast<std::chrono::milliseconds>(ctrl_loop_rate).count());
   _prev_ctrl_loop_timepoint = now;
+
+
+  if (!_opt_last_teleop_msg.has_value()) {
+    RCLCPP_WARN(get_logger(), "no teleop message has been received yet.");
+    return;
+  }
+  if (!_opt_last_servo_pan_msg.has_value()) {
+    RCLCPP_WARN(get_logger(), "no pan actual angle message has been received yet.");
+    return;
+  }
+  if (!_opt_last_servo_tilt_msg.has_value()) {
+    RCLCPP_WARN(get_logger(), "no tilt actual angle message has been received yet.");
+    return;
+  }
+
 
   auto next = std::make_tuple(_state,
                               Mode::PositionControl,
