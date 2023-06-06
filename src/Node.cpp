@@ -117,15 +117,15 @@ void Node::ctrl_loop()
 
 
   if (!_opt_last_teleop_msg.has_value()) {
-    RCLCPP_WARN(get_logger(), "no teleop message has been received yet.");
+    RCLCPP_WARN_THROTTLE(get_logger(), *get_clock(), 2000, "no teleop message has been received yet.");
     return;
   }
   if (!_opt_last_servo_pan_msg.has_value()) {
-    RCLCPP_WARN(get_logger(), "no pan actual angle message has been received yet.");
+    RCLCPP_WARN_THROTTLE(get_logger(), *get_clock(), 2000, "no pan actual angle message has been received yet.");
     return;
   }
   if (!_opt_last_servo_tilt_msg.has_value()) {
-    RCLCPP_WARN(get_logger(), "no tilt actual angle message has been received yet.");
+    RCLCPP_WARN_THROTTLE(get_logger(), *get_clock(), 2000, "no tilt actual angle message has been received yet.");
     return;
   }
 
