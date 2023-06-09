@@ -45,7 +45,7 @@ public:
 private:
   enum class State
   {
-    Init, Hold, Teleop
+    Init, Startup, Hold, Teleop
   };
   State _state;
 
@@ -101,7 +101,9 @@ private:
   void init_heartbeat();
 
   TeleopTarget _teleop_target;
+  std::optional<std::chrono::steady_clock::time_point> _opt_last_teleop_msg;
   ServoActual _servo_actual;
+  std::optional<std::chrono::steady_clock::time_point> _opt_last_servo_pan_msg, _opt_last_servo_tilt_msg;
   float _servo_pan_hold_rad, _servo_tilt_hold_rad;
 
   rclcpp::Subscription<geometry_msgs::msg::Twist>::SharedPtr _head_sub;
@@ -119,6 +121,7 @@ private:
   std::chrono::steady_clock::time_point _prev_teleop_activity_timepoint;
 
   std::tuple<State, Mode, float, float, float, float> handle_Init();
+  std::tuple<State, Mode, float, float, float, float> handle_Startup();
   std::tuple<State, Mode, float, float, float, float> handle_Hold();
   std::tuple<State, Mode, float, float, float, float> handle_Teleop();
 
