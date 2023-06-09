@@ -134,25 +134,23 @@ void Node::ctrl_loop()
   auto [next_state, next_mode, next_pan_rps, next_tilt_rps, next_pan_rad, next_tilt_rad] = next;
   _state = next_state;
 
-  /* Only start publishing messages if all preconditions are fulfilled. */
-  if (_state != State::Init)
-    publish(next_mode, next_pan_rps, next_tilt_rps, next_pan_rad, next_tilt_rad);
+  publish(next_mode, next_pan_rps, next_tilt_rps, next_pan_rad, next_tilt_rad);
 }
 
 std::tuple<Node::State, Node::Mode, float, float, float, float> Node::handle_Init()
 {
   if (!_opt_last_teleop_msg.has_value())
-    return std::make_tuple(State::Init, Mode::PositionControl, 0.0f, 0.0f, 0.0f, 0.0f);
+    return std::make_tuple(State::Init, Mode::PositionControl, 0.0f, 0.0f, get_parameter("pan_initial_angle_deg").as_double() * M_PI / 180.0f, get_parameter("tilt_initial_angle_deg").as_double() * M_PI / 180.0f);
 
   if (!_opt_last_servo_pan_msg.has_value())
-    return std::make_tuple(State::Init, Mode::PositionControl, 0.0f, 0.0f, 0.0f, 0.0f);
+    return std::make_tuple(State::Init, Mode::PositionControl, 0.0f, 0.0f, get_parameter("pan_initial_angle_deg").as_double() * M_PI / 180.0f, get_parameter("tilt_initial_angle_deg").as_double() * M_PI / 180.0f);
 
   if (!_opt_last_servo_tilt_msg.has_value())
-    return std::make_tuple(State::Init, Mode::PositionControl, 0.0f, 0.0f, 0.0f, 0.0f);
+    return std::make_tuple(State::Init, Mode::PositionControl, 0.0f, 0.0f, get_parameter("pan_initial_angle_deg").as_double() * M_PI / 180.0f, get_parameter("tilt_initial_angle_deg").as_double() * M_PI / 180.0f);
 
   /* We have valid messages from all topics, let's get active. */
   RCLCPP_INFO(get_logger(), "State::Init -> State::Startup");
-  return std::make_tuple(State::Startup, Mode::PositionControl, 0.0f, 0.0f, 0.0f, 0.0f);
+  return std::make_tuple(State::Startup, Mode::PositionControl, 0.0f, 0.0f, get_parameter("pan_initial_angle_deg").as_double() * M_PI / 180.0f, get_parameter("tilt_initial_angle_deg").as_double() * M_PI / 180.0f);
 }
 
 std::tuple<Node::State, Node::Mode, float, float, float, float> Node::handle_Startup()
