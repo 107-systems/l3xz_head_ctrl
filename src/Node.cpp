@@ -139,14 +139,42 @@ void Node::ctrl_loop()
 
 std::tuple<Node::State, Node::Mode, float, float, float, float> Node::handle_Init()
 {
+  bool all_messages_received = true;
+  std::stringstream missing_msg_list;
+
   if (!_opt_last_teleop_msg.has_value())
-    return std::make_tuple(State::Init, Mode::PositionControl, 0.0f, 0.0f, get_parameter("pan_initial_angle_deg").as_double() * M_PI / 180.0f, get_parameter("tilt_initial_angle_deg").as_double() * M_PI / 180.0f);
+  {
+    all_messages_received = false;
+    missing_msg_list << "cmd_vel_head ";
+  }
 
   if (!_opt_last_servo_pan_msg.has_value())
-    return std::make_tuple(State::Init, Mode::PositionControl, 0.0f, 0.0f, get_parameter("pan_initial_angle_deg").as_double() * M_PI / 180.0f, get_parameter("tilt_initial_angle_deg").as_double() * M_PI / 180.0f);
+  {
+    all_messages_received = false;
+    missing_msg_list << "head/pan/angle/actual ";
+  }
 
   if (!_opt_last_servo_tilt_msg.has_value())
-    return std::make_tuple(State::Init, Mode::PositionControl, 0.0f, 0.0f, get_parameter("pan_initial_angle_deg").as_double() * M_PI / 180.0f, get_parameter("tilt_initial_angle_deg").as_double() * M_PI / 180.0f);
+  {
+    all_messages_received = false;
+    missing_msg_list << "head/tilt/angle/actual ";
+  }
+
+  if (!all_messages_received)
+  {
+    RCLCPP_WARN_THROTTLE(get_logger(),
+                         *get_clock(),
+                         2000,
+                         "missing messages for topics [ %s]",
+                         missing_msg_list.str().c_str());
+
+    return std::make_tuple(State::Init,
+                           Mode::PositionControl,
+                           0.0f,
+                           0.0f,
+                           get_parameter("pan_initial_angle_deg").as_double() * M_PI / 180.0f,
+                           get_parameter("tilt_initial_angle_deg").as_double() * M_PI / 180.0f);
+  }
 
   /* We have valid messages from all topics, let's get active. */
   RCLCPP_INFO(get_logger(), "State::Init -> State::Startup");
