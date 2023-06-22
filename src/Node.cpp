@@ -31,7 +31,6 @@ Node::Node()
 , _opt_last_servo_tilt_msg{std::nullopt}
 , _servo_pan_hold_rad{0.0f}
 , _servo_tilt_hold_rad{0.0f}
-, _prev_ctrl_loop_timepoint{std::chrono::steady_clock::now()}
 {
   declare_parameter("pan_initial_angle_deg", 180.0f);
   declare_parameter("pan_min_angle_deg", 170.0f);
@@ -45,6 +44,7 @@ Node::Node()
   init_sub();
   init_pub();
 
+  _ctrl_loop_rate_monitor = loop_rate::Monitor::create(CTRL_LOOP_RATE, std::chrono::milliseconds(1));
   _ctrl_loop_timer = create_wall_timer(CTRL_LOOP_RATE, [this]() { this->ctrl_loop(); });
 
   RCLCPP_INFO(get_logger(), "%s init complete.", get_name());
@@ -104,17 +104,17 @@ void Node::init_pub()
 
 void Node::ctrl_loop()
 {
-  auto const now = std::chrono::steady_clock::now();
-  auto const ctrl_loop_rate = (now - _prev_ctrl_loop_timepoint);
-  if (ctrl_loop_rate > (CTRL_LOOP_RATE + std::chrono::milliseconds(1)))
+  _ctrl_loop_rate_monitor->update();
+  if (auto const [timeout, opt_timeout_duration] = _ctrl_loop_rate_monitor->isTimeout();
+    timeout == loop_rate::Monitor::Timeout::Yes)
+  {
     RCLCPP_WARN_THROTTLE(get_logger(),
                          *get_clock(),
                          1000,
                          "ctrl_loop should be called every %ld ms, but is %ld ms instead",
                          CTRL_LOOP_RATE.count(),
-                         std::chrono::duration_cast<std::chrono::milliseconds>(ctrl_loop_rate).count());
-  _prev_ctrl_loop_timepoint = now;
-
+                         opt_timeout_duration.value().count());
+  }
 
   auto next = std::make_tuple(_state,
                               Mode::PositionControl,

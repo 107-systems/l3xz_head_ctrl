@@ -9,6 +9,7 @@ find_package(rclcpp REQUIRED)
 find_package(std_msgs REQUIRED)
 find_package(geometry_msgs REQUIRED)
 find_package(ros2_heartbeat REQUIRED)
+find_package(ros2_loop_rate_monitor REQUIRED)
 find_package(ros2_dynamixel_bridge REQUIRED)
 #######################################################################################
 include_directories(${L3XZ_HEAD_CTRL_TARGET}
@@ -26,7 +27,7 @@ endif()
 #######################################################################################
 target_compile_features(${L3XZ_HEAD_CTRL_TARGET} PRIVATE cxx_std_17)
 #######################################################################################
-ament_target_dependencies(${L3XZ_HEAD_CTRL_TARGET} rclcpp geometry_msgs std_msgs ros2_heartbeat ros2_dynamixel_bridge)
+ament_target_dependencies(${L3XZ_HEAD_CTRL_TARGET} rclcpp geometry_msgs std_msgs ros2_heartbeat ros2_loop_rate_monitor ros2_dynamixel_bridge)
 #######################################################################################
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
