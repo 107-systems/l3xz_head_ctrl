@@ -14,10 +14,8 @@ Head controller for the L3X-Z electric/hydraulic hexapod robot.
 * Install `gsl-lite`
 ```bash
 git clone https://github.com/gsl-lite/gsl-lite && cd gsl-lite
-git checkout v2.0.0
 mkdir build && cd build
-cmake -DMP_UNITS_AS_SYSTEM_HEADERS=ON -DMP_UNITS_BUILD_LA=OFF..
-make -j8
+cmake .. && make -j8
 sudo make install
 ```
 * Install `Catch2`
@@ -29,7 +27,7 @@ sudo make install
 ```
 * Install `fmt`
 ```bash
-https://github.com/fmtlib/fmt && cd fmt
+git clone https://github.com/fmtlib/fmt && cd fmt
 mkdir build && cd build
 cmake -DFMT_TEST=OFF ..
 make -j8
@@ -38,8 +36,10 @@ sudo make install
 * Install `mp-units`
 ```bash
 git clone https://github.com/mpusz/mp-units && cd mp-units
+git checkout v2.0.0
 mkdir build && cd build
-cmake .. && make
+cmake -DMP_UNITS_AS_SYSTEM_HEADERS=ON -DMP_UNITS_BUILD_LA=OFF ..
+make -j8
 sudo make install
 ```
 * Build with `colcon`
