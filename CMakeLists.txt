@@ -11,6 +11,10 @@ find_package(geometry_msgs REQUIRED)
 find_package(ros2_heartbeat REQUIRED)
 find_package(ros2_loop_rate_monitor REQUIRED)
 find_package(ros2_dynamixel_bridge REQUIRED)
+find_package(gsl-lite CONFIG REQUIRED)
+find_package(fmt CONFIG REQUIRED)
+find_package(Catch2 CONFIG REQUIRED)
+find_package(mp-units CONFIG REQUIRED)
 #######################################################################################
 include_directories(${L3XZ_HEAD_CTRL_TARGET}
   include
