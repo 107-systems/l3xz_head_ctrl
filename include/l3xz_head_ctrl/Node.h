@@ -84,7 +84,7 @@ private:
 
   std::map<Servo, quantity<rad>> _actual_angle;
   std::optional<std::chrono::steady_clock::time_point> _opt_last_servo_pan_msg, _opt_last_servo_tilt_msg;
-  float _servo_pan_hold_rad, _servo_tilt_hold_rad;
+  std::map<Servo, quantity<rad>> _target_angle;
 
   rclcpp::Subscription<geometry_msgs::msg::Twist>::SharedPtr _head_sub;
   rclcpp::Subscription<std_msgs::msg::Float32>::SharedPtr _pan_angle_actual_sub, _tilt_angle_actual_sub;
