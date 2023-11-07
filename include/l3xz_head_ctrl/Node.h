@@ -68,33 +68,20 @@ private:
     Pan, Tilt
   };
 
-  class TeleopTarget
-  {
-  private:
-    std::map<Servo, float> _angular_velocity_rad_per_sec_map;
-  public:
-    TeleopTarget()
-    : _angular_velocity_rad_per_sec_map
-    {
-      {Servo::Pan,  0.0f},
-      {Servo::Tilt, 0.0f},
-    }
-    { }
-    [[nodiscard]] float angular_velocity_rps(Servo const servo) const { return _angular_velocity_rad_per_sec_map.at(servo); }
-    void set_angular_velocity_rps(Servo const servo, float const ang_vel_dps) { _angular_velocity_rad_per_sec_map[servo] = ang_vel_dps; }
-    [[nodiscard]] bool is_active_manual_control() const
-    {
-      static float constexpr ACTIVITY_EPSILON_rad_per_sec = 1.0f * M_PI / 180.0f;
-      return (fabs(_angular_velocity_rad_per_sec_map.at(Servo::Pan))  > ACTIVITY_EPSILON_rad_per_sec ||
-              fabs(_angular_velocity_rad_per_sec_map.at(Servo::Tilt)) > ACTIVITY_EPSILON_rad_per_sec);
-    }
-  };
-
   heartbeat::Publisher::SharedPtr _heartbeat_pub;
   void init_heartbeat();
 
-  TeleopTarget _teleop_target;
+  std::map<Servo, quantity<rad/s>> _target_angular_velocity;
   std::optional<std::chrono::steady_clock::time_point> _opt_last_teleop_msg;
+  [[nodiscard]] bool is_active_manual_control() const
+  {
+    auto constexpr ACTIVITY_EPSILON = 1. * deg/s;
+    return (_target_angular_velocity.at(Servo::Pan)  >       ACTIVITY_EPSILON.in(rad/s) ||
+            _target_angular_velocity.at(Servo::Pan)  < -1. * ACTIVITY_EPSILON.in(rad/s) ||
+            _target_angular_velocity.at(Servo::Tilt) >       ACTIVITY_EPSILON.in(rad/s) ||
+            _target_angular_velocity.at(Servo::Tilt) < -1. * ACTIVITY_EPSILON.in(rad/s));
+  }
+
   std::map<Servo, quantity<rad>> _actual_angle;
   std::optional<std::chrono::steady_clock::time_point> _opt_last_servo_pan_msg, _opt_last_servo_tilt_msg;
   float _servo_pan_hold_rad, _servo_tilt_hold_rad;

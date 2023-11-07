@@ -24,7 +24,11 @@ namespace l3xz::head
 Node::Node()
 : rclcpp::Node("l3xz_head_ctrl")
 , _state{State::Init}
-, _teleop_target{}
+, _target_angular_velocity
+{
+  {Servo::Pan,  0. * rad/s},
+  {Servo::Tilt, 0. * rad/s},
+}
 , _opt_last_teleop_msg{std::nullopt}
 , _actual_angle
 {
@@ -73,8 +77,8 @@ void Node::init_sub()
     [this](geometry_msgs::msg::Twist::SharedPtr const msg)
     {
       _opt_last_teleop_msg = std::chrono::steady_clock::now();
-      _teleop_target.set_angular_velocity_rps(Servo::Pan,  msg->angular.z);
-      _teleop_target.set_angular_velocity_rps(Servo::Tilt, msg->angular.y);
+      _target_angular_velocity[Servo::Pan ] = static_cast<double>(msg->angular.z) * rad/s;
+      _target_angular_velocity[Servo::Tilt] = static_cast<double>(msg->angular.y) * rad/s;
     });
 
   _pan_angle_actual_sub = create_subscription<std_msgs::msg::Float32>(
@@ -212,7 +216,7 @@ std::tuple<Node::State, Node::Mode, float, float, float, float> Node::handle_Sta
 
 std::tuple<Node::State, Node::Mode, float, float, float, float> Node::handle_Hold()
 {
-  if (_teleop_target.is_active_manual_control())
+  if (is_active_manual_control())
   {
     RCLCPP_INFO(get_logger(), "State::Hold -> State::Teleop due to active manual control.");
     return std::make_tuple(State::Teleop, Mode::VelocityControl, 0.0f, 0.0f, _servo_pan_hold_rad, _servo_tilt_hold_rad);
@@ -226,8 +230,8 @@ std::tuple<Node::State, Node::Mode, float, float, float, float> Node::handle_Tel
   /* Determine new target angular velocities for
    * both pan and tilt servo.
    */
-  float target_pan_ang_vel_rad_per_sec  = _teleop_target.angular_velocity_rps(Servo::Pan);
-  float target_tilt_ang_vel_rad_per_sec = _teleop_target.angular_velocity_rps(Servo::Tilt);
+  float target_pan_ang_vel_rad_per_sec  = _target_angular_velocity.at(Servo::Pan ).numerical_value_in(rad/s);
+  float target_tilt_ang_vel_rad_per_sec = _target_angular_velocity.at(Servo::Tilt).numerical_value_in(rad/s);
 
   /* Check if we are exceeding the limits and stop
    * servo movement.
@@ -253,7 +257,7 @@ std::tuple<Node::State, Node::Mode, float, float, float, float> Node::handle_Tel
    */
   auto const now = std::chrono::steady_clock::now();
 
-  if (_teleop_target.is_active_manual_control())
+  if (is_active_manual_control())
     _prev_teleop_activity_timepoint = now;
 
   if ((now - _prev_teleop_activity_timepoint) > std::chrono::seconds(5))
