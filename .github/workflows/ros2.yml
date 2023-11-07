@@ -55,7 +55,6 @@ jobs:
     - name: Install mp-units
       run: |
         git clone https://github.com/mpusz/mp-units && cd mp-units
-        git checkout v2.0.0
         mkdir build && cd build
         cmake -DMP_UNITS_AS_SYSTEM_HEADERS=ON -DMP_UNITS_BUILD_LA=OFF ..
         make -j8
