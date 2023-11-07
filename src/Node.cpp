@@ -26,7 +26,11 @@ Node::Node()
 , _state{State::Init}
 , _teleop_target{}
 , _opt_last_teleop_msg{std::nullopt}
-, _servo_actual{}
+, _actual_angle
+{
+  {Servo::Pan,  0. * rad},
+  {Servo::Tilt, 0. * rad},
+}
 , _opt_last_servo_pan_msg{std::nullopt}
 , _opt_last_servo_tilt_msg{std::nullopt}
 , _servo_pan_hold_rad{0.0f}
@@ -78,7 +82,7 @@ void Node::init_sub()
     [this](std_msgs::msg::Float32::SharedPtr const msg)
     {
       _opt_last_servo_pan_msg = std::chrono::steady_clock::now();
-      _servo_actual.set_angle_rad(Servo::Pan, msg->data);
+      _actual_angle[Servo::Pan] = static_cast<double>(msg->data) * rad;
     });
 
   _tilt_angle_actual_sub = create_subscription<std_msgs::msg::Float32>(
@@ -86,7 +90,7 @@ void Node::init_sub()
     [this](std_msgs::msg::Float32::SharedPtr const msg)
     {
       _opt_last_servo_tilt_msg = std::chrono::steady_clock::now();
-      _servo_actual.set_angle_rad(Servo::Tilt, msg->data);
+      _actual_angle[Servo::Tilt] = static_cast<double>(msg->data) * rad;
     });
 }
 
@@ -192,13 +196,13 @@ std::tuple<Node::State, Node::Mode, float, float, float, float> Node::handle_Sta
     return (fabs(target_rad - actual_rad) < INITIAL_ANGLE_EPSILON_rad);
   };
 
-  if (initial_target_angle_reached(PAN_INITIAL_ANGLE_rad,  _servo_actual.angle_rad(Servo::Pan)) &&
-      initial_target_angle_reached(TILT_INITIAL_ANGLE_rad, _servo_actual.angle_rad(Servo::Tilt)))
+  if (initial_target_angle_reached(PAN_INITIAL_ANGLE_rad,  _actual_angle.at(Servo::Pan).numerical_value_in(rad)) &&
+      initial_target_angle_reached(TILT_INITIAL_ANGLE_rad, _actual_angle.at(Servo::Tilt).numerical_value_in(rad)))
   {
     RCLCPP_INFO(get_logger(), "State::Startup -> State::Hold");
 
-    _servo_pan_hold_rad  = _servo_actual.angle_rad(Servo::Pan);
-    _servo_tilt_hold_rad = _servo_actual.angle_rad(Servo::Tilt);
+    _servo_pan_hold_rad  = _actual_angle.at(Servo::Pan).numerical_value_in(rad);
+    _servo_tilt_hold_rad = _actual_angle.at(Servo::Tilt).numerical_value_in(rad);
 
     return std::make_tuple(State::Hold, Mode::PositionControl, 0.0f, 0.0f, _servo_pan_hold_rad, _servo_tilt_hold_rad);
   }
@@ -231,17 +235,17 @@ std::tuple<Node::State, Node::Mode, float, float, float, float> Node::handle_Tel
   static float const PAN_MIN_ANGLE_rad = get_parameter("pan_min_angle_deg").as_double() * M_PI / 180.0f;
   static float const PAN_MAX_ANGLE_rad = get_parameter("pan_max_angle_deg").as_double() * M_PI / 180.0f;
 
-  if ((_servo_actual.angle_rad(Servo::Pan) < PAN_MIN_ANGLE_rad) && (target_pan_ang_vel_rad_per_sec < 0.0f))
+  if ((_actual_angle.at(Servo::Pan).numerical_value_in(rad) < PAN_MIN_ANGLE_rad) && (target_pan_ang_vel_rad_per_sec < 0.0f))
     target_pan_ang_vel_rad_per_sec = 0.0f;
-  if ((_servo_actual.angle_rad(Servo::Pan) > PAN_MAX_ANGLE_rad) && (target_pan_ang_vel_rad_per_sec > 0.0f))
+  if ((_actual_angle.at(Servo::Pan).numerical_value_in(rad) > PAN_MAX_ANGLE_rad) && (target_pan_ang_vel_rad_per_sec > 0.0f))
     target_pan_ang_vel_rad_per_sec = 0.0f;
 
   static float const TILT_MIN_ANGLE_rad = get_parameter("tilt_min_angle_deg").as_double() * M_PI / 180.0f;
   static float const TILT_MAX_ANGLE_rad = get_parameter("tilt_max_angle_deg").as_double() * M_PI / 180.0f;
 
-  if ((_servo_actual.angle_rad(Servo::Tilt) < TILT_MIN_ANGLE_rad) && (target_tilt_ang_vel_rad_per_sec < 0.0f))
+  if ((_actual_angle.at(Servo::Tilt).numerical_value_in(rad) < TILT_MIN_ANGLE_rad) && (target_tilt_ang_vel_rad_per_sec < 0.0f))
     target_tilt_ang_vel_rad_per_sec = 0.0f;
-  if ((_servo_actual.angle_rad(Servo::Tilt) > TILT_MAX_ANGLE_rad) && (target_tilt_ang_vel_rad_per_sec > 0.0f))
+  if ((_actual_angle.at(Servo::Tilt).numerical_value_in(rad) > TILT_MAX_ANGLE_rad) && (target_tilt_ang_vel_rad_per_sec > 0.0f))
     target_tilt_ang_vel_rad_per_sec = 0.0f;
 
   /* Update the activity time-point, if we are currently actively
@@ -256,13 +260,13 @@ std::tuple<Node::State, Node::Mode, float, float, float, float> Node::handle_Tel
   {
     RCLCPP_INFO(get_logger(), "State::Teleop -> State::Teleop due to inactivity timeout on manual control.");
 
-    _servo_pan_hold_rad  = _servo_actual.angle_rad(Servo::Pan);
-    _servo_tilt_hold_rad = _servo_actual.angle_rad(Servo::Tilt);
+    _servo_pan_hold_rad  = _actual_angle.at(Servo::Pan).numerical_value_in(rad);
+    _servo_tilt_hold_rad = _actual_angle.at(Servo::Tilt).numerical_value_in(rad);
 
     return std::make_tuple(State::Hold, Mode::PositionControl, 0.0f, 0.0f, _servo_pan_hold_rad, _servo_tilt_hold_rad);
   }
 
-  return std::make_tuple(State::Teleop, Mode::VelocityControl, target_pan_ang_vel_rad_per_sec, target_tilt_ang_vel_rad_per_sec, _servo_actual.angle_rad(Servo::Pan), _servo_actual.angle_rad(Servo::Tilt));
+  return std::make_tuple(State::Teleop, Mode::VelocityControl, target_pan_ang_vel_rad_per_sec, target_tilt_ang_vel_rad_per_sec, _actual_angle.at(Servo::Pan).numerical_value_in(rad), _actual_angle.at(Servo::Tilt).numerical_value_in(rad));
 }
 
 void Node::publish(Mode const mode, float const pan_rps, float const tilt_rps, float const pan_rad, float const tilt_rad)

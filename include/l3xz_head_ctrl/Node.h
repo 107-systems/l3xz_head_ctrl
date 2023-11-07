@@ -27,9 +27,17 @@
 
 #include <ros2_dynamixel_bridge/msg/mode.hpp>
 
+#include <mp-units/systems/si/si.h>
+#include <mp-units/systems/angular/angular.h>
+
 /**************************************************************************************
  * NAMESPACE
  **************************************************************************************/
+
+using namespace mp_units;
+using mp_units::angular::unit_symbols::deg;
+using mp_units::angular::unit_symbols::rad;
+using mp_units::si::unit_symbols::s;
 
 namespace l3xz::head
 {
@@ -82,27 +90,12 @@ private:
     }
   };
 
-  class ServoActual
-  {
-  private:
-    std::map<Servo, float> _angle_rad_map;
-  public:
-    ServoActual()
-    : _angle_rad_map
-    {
-      {Servo::Pan,  0.0f},
-      {Servo::Tilt, 0.0f},
-    } { }
-    [[nodiscard]] float angle_rad(Servo const servo) const { return _angle_rad_map.at(servo); }
-    void set_angle_rad(Servo const servo, float const angle_rad) { _angle_rad_map[servo] = angle_rad; }
-  };
-
   heartbeat::Publisher::SharedPtr _heartbeat_pub;
   void init_heartbeat();
 
   TeleopTarget _teleop_target;
   std::optional<std::chrono::steady_clock::time_point> _opt_last_teleop_msg;
-  ServoActual _servo_actual;
+  std::map<Servo, quantity<rad>> _actual_angle;
   std::optional<std::chrono::steady_clock::time_point> _opt_last_servo_pan_msg, _opt_last_servo_tilt_msg;
   float _servo_pan_hold_rad, _servo_tilt_hold_rad;
 
