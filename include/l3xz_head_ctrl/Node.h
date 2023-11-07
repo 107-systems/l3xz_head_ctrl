@@ -71,7 +71,6 @@ private:
   heartbeat::Publisher::SharedPtr _heartbeat_pub;
   void init_heartbeat();
 
-  std::map<Servo, quantity<rad/s>> _target_angular_velocity;
   std::optional<std::chrono::steady_clock::time_point> _opt_last_teleop_msg;
   [[nodiscard]] bool is_active_manual_control() const
   {
@@ -84,11 +83,13 @@ private:
 
   std::map<Servo, quantity<rad>> _actual_angle;
   std::optional<std::chrono::steady_clock::time_point> _opt_last_servo_pan_msg, _opt_last_servo_tilt_msg;
-  std::map<Servo, quantity<rad>> _target_angle;
 
   rclcpp::Subscription<geometry_msgs::msg::Twist>::SharedPtr _head_sub;
   rclcpp::Subscription<std_msgs::msg::Float32>::SharedPtr _pan_angle_actual_sub, _tilt_angle_actual_sub;
   void init_sub();
+  std::map<Servo, quantity<rad>> _target_angle;
+  std::map<Servo, quantity<rad/s>> _target_angular_velocity;
+  Mode _target_mode;
   rclcpp::Publisher<std_msgs::msg::Float32>::SharedPtr _pan_angle_pub, _tilt_angle_pub, _pan_angle_vel_pub, _tilt_angle_vel_pub;
   rclcpp::Publisher<ros2_dynamixel_bridge::msg::Mode>::SharedPtr _pan_angle_mode_pub, _tilt_angle_mode_pub;
   void init_pub();
@@ -100,15 +101,15 @@ private:
 
   std::chrono::steady_clock::time_point _prev_teleop_activity_timepoint;
 
-  std::tuple<State, Mode, float, float, float, float> handle_Init();
-  std::tuple<State, Mode, float, float, float, float> handle_Startup();
-  std::tuple<State, Mode, float, float, float, float> handle_Hold();
-  std::tuple<State, Mode, float, float, float, float> handle_Teleop();
+  State handle_Init();
+  State handle_Startup();
+  State handle_Hold();
+  State handle_Teleop();
 
-  void publish(Mode const mode, float const pan_rps, float const tilt_rps, float const pan_rad, float const tilt_rad);
+  void publish();
 
-  static void publish_AngularVelocity     (rclcpp::Publisher<std_msgs::msg::Float32>::SharedPtr const pub, float const angular_velocity_rad_per_sec);
-  static void publish_Angle               (rclcpp::Publisher<std_msgs::msg::Float32>::SharedPtr const pub, float const angle_rad);
+  static void publish_AngularVelocity     (rclcpp::Publisher<std_msgs::msg::Float32>::SharedPtr const pub, quantity<rad/s> const angular_velocity);
+  static void publish_Angle               (rclcpp::Publisher<std_msgs::msg::Float32>::SharedPtr const pub, quantity<rad> const angle);
   static void publish_mode_PositionControl(rclcpp::Publisher<ros2_dynamixel_bridge::msg::Mode>::SharedPtr const pub);
   static void publish_mode_VelocityControl(rclcpp::Publisher<ros2_dynamixel_bridge::msg::Mode>::SharedPtr const pub);
 };

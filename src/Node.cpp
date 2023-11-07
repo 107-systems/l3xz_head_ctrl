@@ -24,11 +24,6 @@ namespace l3xz::head
 Node::Node()
 : rclcpp::Node("l3xz_head_ctrl")
 , _state{State::Init}
-, _target_angular_velocity
-{
-  {Servo::Pan,  0. * rad/s},
-  {Servo::Tilt, 0. * rad/s},
-}
 , _opt_last_teleop_msg{std::nullopt}
 , _actual_angle
 {
@@ -42,6 +37,12 @@ Node::Node()
   {Servo::Pan,  0. * rad},
   {Servo::Tilt, 0. * rad},
 }
+, _target_angular_velocity
+{
+  {Servo::Pan,  0. * rad/s},
+  {Servo::Tilt, 0. * rad/s},
+}
+, _target_mode{Mode::PositionControl}
 {
   declare_parameter("pan_initial_angle_deg", 180.0f);
   declare_parameter("pan_min_angle_deg", 170.0f);
@@ -127,28 +128,22 @@ void Node::ctrl_loop()
                          opt_timeout_duration.value().count());
   }
 
-  auto next = std::make_tuple(_state,
-                              Mode::PositionControl,
-                              0.0f,
-                              0.0f,
-                              get_parameter("pan_initial_angle_deg").as_double()  * M_PI / 180.0f,
-                              get_parameter("tilt_initial_angle_deg").as_double() * M_PI / 180.0f);
+  auto next_state = _state;
 
   switch(_state)
   {
-    case State::Init:    next = handle_Init();    break;
-    case State::Startup: next = handle_Startup(); break;
-    case State::Teleop:  next = handle_Teleop();  break;
+    case State::Init:    next_state = handle_Init();    break;
+    case State::Startup: next_state = handle_Startup(); break;
+    case State::Teleop:  next_state = handle_Teleop();  break;
     default:
-    case State::Hold:    next = handle_Hold();    break;
+    case State::Hold:    next_state = handle_Hold();    break;
   }
-  auto [next_state, next_mode, next_pan_rps, next_tilt_rps, next_pan_rad, next_tilt_rad] = next;
   _state = next_state;
 
-  publish(next_mode, next_pan_rps, next_tilt_rps, next_pan_rad, next_tilt_rad);
+  publish();
 }
 
-std::tuple<Node::State, Node::Mode, float, float, float, float> Node::handle_Init()
+Node::State Node::handle_Init()
 {
   bool all_messages_received = true;
   std::stringstream missing_msg_list;
@@ -179,81 +174,75 @@ std::tuple<Node::State, Node::Mode, float, float, float, float> Node::handle_Ini
                          "missing messages for topics [ %s]",
                          missing_msg_list.str().c_str());
 
-    return std::make_tuple(State::Init,
-                           Mode::PositionControl,
-                           0.0f,
-                           0.0f,
-                           get_parameter("pan_initial_angle_deg").as_double() * M_PI / 180.0f,
-                           get_parameter("tilt_initial_angle_deg").as_double() * M_PI / 180.0f);
+    return State::Init;
   }
 
   /* We have valid messages from all topics, let's get active. */
   RCLCPP_INFO(get_logger(), "State::Init -> State::Startup");
-  return std::make_tuple(State::Startup, Mode::PositionControl, 0.0f, 0.0f, get_parameter("pan_initial_angle_deg").as_double() * M_PI / 180.0f, get_parameter("tilt_initial_angle_deg").as_double() * M_PI / 180.0f);
+  return State::Startup;
 }
 
-std::tuple<Node::State, Node::Mode, float, float, float, float> Node::handle_Startup()
+Node::State Node::handle_Startup()
 {
-  float const PAN_INITIAL_ANGLE_rad  = get_parameter("pan_initial_angle_deg").as_double()  * M_PI / 180.0f;
-  float const TILT_INITIAL_ANGLE_rad = get_parameter("tilt_initial_angle_deg").as_double() * M_PI / 180.0f;
+  auto const PAN_INITIAL_ANGLE  = (get_parameter("pan_initial_angle_deg").as_double()  * deg).in(rad);
+  auto const TILT_INITIAL_ANGLE = (get_parameter("tilt_initial_angle_deg").as_double() * deg).in(rad);
 
-  auto initial_target_angle_reached = [](float const target_rad, float const actual_rad)
+  auto initial_target_angle_reached = [](quantity<rad> const target, quantity<rad> const actual)
   {
-    static float constexpr INITIAL_ANGLE_EPSILON_rad = 2.0f * M_PI / 180.0f;
-    return (fabs(target_rad - actual_rad) < INITIAL_ANGLE_EPSILON_rad);
+    static auto constexpr INITIAL_ANGLE_EPSILON = (2. * deg).in(rad);
+    auto const diff = target - actual;
+    return (diff > -1. * INITIAL_ANGLE_EPSILON &&
+            diff <       INITIAL_ANGLE_EPSILON);
   };
 
-  if (initial_target_angle_reached(PAN_INITIAL_ANGLE_rad,  _actual_angle.at(Servo::Pan).numerical_value_in(rad)) &&
-      initial_target_angle_reached(TILT_INITIAL_ANGLE_rad, _actual_angle.at(Servo::Tilt).numerical_value_in(rad)))
+  if (initial_target_angle_reached(PAN_INITIAL_ANGLE,  _actual_angle.at(Servo::Pan)) &&
+      initial_target_angle_reached(TILT_INITIAL_ANGLE, _actual_angle.at(Servo::Tilt)))
   {
     RCLCPP_INFO(get_logger(), "State::Startup -> State::Hold");
 
     _target_angle[Servo::Pan ] = _actual_angle.at(Servo::Pan);
     _target_angle[Servo::Tilt] = _actual_angle.at(Servo::Tilt);
 
-    return std::make_tuple(State::Hold, Mode::PositionControl, 0.0f, 0.0f, _target_angle.at(Servo::Pan).numerical_value_in(rad), _target_angle.at(Servo::Tilt).numerical_value_in(rad));
+    return State::Hold;
   }
 
-  return std::make_tuple(State::Startup, Mode::PositionControl, 0.0f, 0.0f, PAN_INITIAL_ANGLE_rad, TILT_INITIAL_ANGLE_rad);
+  return State::Startup;
 }
 
-std::tuple<Node::State, Node::Mode, float, float, float, float> Node::handle_Hold()
+Node::State Node::handle_Hold()
 {
   if (is_active_manual_control())
   {
     RCLCPP_INFO(get_logger(), "State::Hold -> State::Teleop due to active manual control.");
-    return std::make_tuple(State::Teleop, Mode::VelocityControl, 0.0f, 0.0f, _target_angle.at(Servo::Pan).numerical_value_in(rad), _target_angle.at(Servo::Tilt).numerical_value_in(rad));
+
+    _target_mode = Mode::VelocityControl;
+
+    return State::Teleop;
   }
 
-  return std::make_tuple(State::Hold, Mode::PositionControl, 0.0f, 0.0f, _target_angle.at(Servo::Pan).numerical_value_in(rad), _target_angle.at(Servo::Tilt).numerical_value_in(rad));
+  return State::Hold;
 }
 
-std::tuple<Node::State, Node::Mode, float, float, float, float> Node::handle_Teleop()
+Node::State Node::handle_Teleop()
 {
-  /* Determine new target angular velocities for
-   * both pan and tilt servo.
-   */
-  float target_pan_ang_vel_rad_per_sec  = _target_angular_velocity.at(Servo::Pan ).numerical_value_in(rad/s);
-  float target_tilt_ang_vel_rad_per_sec = _target_angular_velocity.at(Servo::Tilt).numerical_value_in(rad/s);
-
   /* Check if we are exceeding the limits and stop
    * servo movement.
    */
-  static float const PAN_MIN_ANGLE_rad = get_parameter("pan_min_angle_deg").as_double() * M_PI / 180.0f;
-  static float const PAN_MAX_ANGLE_rad = get_parameter("pan_max_angle_deg").as_double() * M_PI / 180.0f;
+  static auto const PAN_MIN_ANGLE = (get_parameter("pan_min_angle_deg").as_double() * deg).in(rad);
+  static auto const PAN_MAX_ANGLE = (get_parameter("pan_max_angle_deg").as_double() * deg).in(rad);
 
-  if ((_actual_angle.at(Servo::Pan).numerical_value_in(rad) < PAN_MIN_ANGLE_rad) && (target_pan_ang_vel_rad_per_sec < 0.0f))
-    target_pan_ang_vel_rad_per_sec = 0.0f;
-  if ((_actual_angle.at(Servo::Pan).numerical_value_in(rad) > PAN_MAX_ANGLE_rad) && (target_pan_ang_vel_rad_per_sec > 0.0f))
-    target_pan_ang_vel_rad_per_sec = 0.0f;
+  if ((_actual_angle.at(Servo::Pan) < PAN_MIN_ANGLE) && (_target_angular_velocity.at(Servo::Pan) < 0. * rad/s))
+    _target_angular_velocity[Servo::Pan] = 0. * rad/s;
+  if ((_actual_angle.at(Servo::Pan) > PAN_MAX_ANGLE) && (_target_angular_velocity.at(Servo::Pan) > 0. * rad/s))
+    _target_angular_velocity[Servo::Pan] = 0. * rad/s;
 
-  static float const TILT_MIN_ANGLE_rad = get_parameter("tilt_min_angle_deg").as_double() * M_PI / 180.0f;
-  static float const TILT_MAX_ANGLE_rad = get_parameter("tilt_max_angle_deg").as_double() * M_PI / 180.0f;
+  static auto const TILT_MIN_ANGLE = (get_parameter("tilt_min_angle_deg").as_double() * deg).in(rad);
+  static auto const TILT_MAX_ANGLE = (get_parameter("tilt_max_angle_deg").as_double() * deg).in(rad);
 
-  if ((_actual_angle.at(Servo::Tilt).numerical_value_in(rad) < TILT_MIN_ANGLE_rad) && (target_tilt_ang_vel_rad_per_sec < 0.0f))
-    target_tilt_ang_vel_rad_per_sec = 0.0f;
-  if ((_actual_angle.at(Servo::Tilt).numerical_value_in(rad) > TILT_MAX_ANGLE_rad) && (target_tilt_ang_vel_rad_per_sec > 0.0f))
-    target_tilt_ang_vel_rad_per_sec = 0.0f;
+  if ((_actual_angle.at(Servo::Tilt) < TILT_MIN_ANGLE) && (_target_angular_velocity.at(Servo::Tilt) < 0. * rad/s))
+    _target_angular_velocity[Servo::Tilt] = 0. * rad/s;
+  if ((_actual_angle.at(Servo::Tilt) > TILT_MAX_ANGLE) && (_target_angular_velocity.at(Servo::Tilt) > 0. * rad/s))
+    _target_angular_velocity[Servo::Tilt] = 0. * rad/s;
 
   /* Update the activity time-point, if we are currently actively
    * teleoperating the robots sensor head.
@@ -270,15 +259,17 @@ std::tuple<Node::State, Node::Mode, float, float, float, float> Node::handle_Tel
     _target_angle[Servo::Pan ] = _actual_angle.at(Servo::Pan);
     _target_angle[Servo::Tilt] = _actual_angle.at(Servo::Tilt);
 
-    return std::make_tuple(State::Hold, Mode::PositionControl, 0.0f, 0.0f, _target_angle.at(Servo::Pan).numerical_value_in(rad), _target_angle.at(Servo::Tilt).numerical_value_in(rad));
+    _target_mode = Mode::PositionControl;
+
+    return State::Hold;
   }
 
-  return std::make_tuple(State::Teleop, Mode::VelocityControl, target_pan_ang_vel_rad_per_sec, target_tilt_ang_vel_rad_per_sec, _actual_angle.at(Servo::Pan).numerical_value_in(rad), _actual_angle.at(Servo::Tilt).numerical_value_in(rad));
+  return State::Teleop;
 }
 
-void Node::publish(Mode const mode, float const pan_rps, float const tilt_rps, float const pan_rad, float const tilt_rad)
+void Node::publish()
 {
-  if (mode == Mode::PositionControl)
+  if (_target_mode == Mode::PositionControl)
   {
     publish_mode_PositionControl(_pan_angle_mode_pub);
     publish_mode_PositionControl(_tilt_angle_mode_pub);
@@ -289,46 +280,46 @@ void Node::publish(Mode const mode, float const pan_rps, float const tilt_rps, f
     publish_mode_VelocityControl(_tilt_angle_mode_pub);
   }
 
-  publish_AngularVelocity(_pan_angle_vel_pub, pan_rps);
-  publish_AngularVelocity(_tilt_angle_vel_pub, tilt_rps);
+  publish_AngularVelocity(_pan_angle_vel_pub, _target_angular_velocity.at(Servo::Pan));
+  publish_AngularVelocity(_tilt_angle_vel_pub, _target_angular_velocity.at(Servo::Tilt));
 
-  static float const PAN_MIN_ANGLE_rad = get_parameter("pan_min_angle_deg").as_double() * M_PI / 180.0f;
-  static float const PAN_MAX_ANGLE_rad = get_parameter("pan_max_angle_deg").as_double() * M_PI / 180.0f;
+  static auto const PAN_MIN_ANGLE = (get_parameter("pan_min_angle_deg").as_double() * deg).in(rad);
+  static auto const PAN_MAX_ANGLE = (get_parameter("pan_max_angle_deg").as_double() * deg).in(rad);
 
-  RCLCPP_DEBUG(get_logger(), "pan_rad = %0.2f, pan_max = %0.2f, pan_min = %0.2f", pan_rad, PAN_MAX_ANGLE_rad, PAN_MIN_ANGLE_rad);
+  RCLCPP_DEBUG(get_logger(), "pan_rad = %0.2f, pan_max = %0.2f, pan_min = %0.2f", _target_angle.at(Servo::Pan).numerical_value_in(rad), PAN_MAX_ANGLE.numerical_value_in(rad), PAN_MIN_ANGLE.numerical_value_in(rad));
 
-  if (pan_rad > PAN_MAX_ANGLE_rad)
-    publish_Angle(_pan_angle_pub, PAN_MAX_ANGLE_rad);
-  else if (pan_rad < PAN_MIN_ANGLE_rad)
-    publish_Angle(_pan_angle_pub, PAN_MIN_ANGLE_rad);
+  if (_target_angle.at(Servo::Pan) > PAN_MAX_ANGLE)
+    publish_Angle(_pan_angle_pub, PAN_MAX_ANGLE);
+  else if (_target_angle.at(Servo::Pan) < PAN_MIN_ANGLE)
+    publish_Angle(_pan_angle_pub, PAN_MIN_ANGLE);
   else
-    publish_Angle(_pan_angle_pub, pan_rad);
+    publish_Angle(_pan_angle_pub, _target_angle.at(Servo::Pan));
 
 
-  static float const TILT_MIN_ANGLE_rad = get_parameter("tilt_min_angle_deg").as_double() * M_PI / 180.0f;
-  static float const TILT_MAX_ANGLE_rad = get_parameter("tilt_max_angle_deg").as_double() * M_PI / 180.0f;
+  static auto const TILT_MIN_ANGLE = (get_parameter("tilt_min_angle_deg").as_double() * deg).in(rad);
+  static auto const TILT_MAX_ANGLE = (get_parameter("tilt_max_angle_deg").as_double() * deg).in(rad);
 
-  RCLCPP_DEBUG(get_logger(), "tilt_rad = %0.2f, tilt_max = %0.2f, tilt_min = %0.2f", tilt_rad, TILT_MAX_ANGLE_rad, TILT_MIN_ANGLE_rad);
+  RCLCPP_DEBUG(get_logger(), "tilt_rad = %0.2f, tilt_max = %0.2f, tilt_min = %0.2f", _target_angle.at(Servo::Tilt).numerical_value_in(rad), TILT_MAX_ANGLE.numerical_value_in(rad), TILT_MIN_ANGLE.numerical_value_in(rad));
 
-  if (tilt_rad > TILT_MAX_ANGLE_rad)
-    publish_Angle(_tilt_angle_pub, TILT_MAX_ANGLE_rad);
-  else if (tilt_rad < TILT_MIN_ANGLE_rad)
-    publish_Angle(_tilt_angle_pub, TILT_MIN_ANGLE_rad);
+  if (_target_angle.at(Servo::Tilt) > TILT_MAX_ANGLE)
+    publish_Angle(_tilt_angle_pub, TILT_MAX_ANGLE);
+  else if (_target_angle.at(Servo::Tilt) < TILT_MIN_ANGLE)
+    publish_Angle(_tilt_angle_pub, TILT_MIN_ANGLE);
   else
-    publish_Angle(_tilt_angle_pub, tilt_rad);
+    publish_Angle(_tilt_angle_pub, _target_angle.at(Servo::Tilt));
 }
 
-void Node::publish_AngularVelocity(rclcpp::Publisher<std_msgs::msg::Float32>::SharedPtr const pub, float const angular_velocity_rad_per_sec)
+void Node::publish_AngularVelocity(rclcpp::Publisher<std_msgs::msg::Float32>::SharedPtr const pub, quantity<rad/s> const angular_velocity)
 {
   std_msgs::msg::Float32 msg;
-  msg.data = angular_velocity_rad_per_sec;
+  msg.data = angular_velocity.numerical_value_in(rad/s);
   pub->publish(msg);
 }
 
-void Node::publish_Angle(rclcpp::Publisher<std_msgs::msg::Float32>::SharedPtr const pub, float const angle_rad)
+void Node::publish_Angle(rclcpp::Publisher<std_msgs::msg::Float32>::SharedPtr const pub, quantity<rad> const angle)
 {
   std_msgs::msg::Float32 msg;
-  msg.data = angle_rad;
+  msg.data = angle.numerical_value_in(rad);
   pub->publish(msg);
 }
 
