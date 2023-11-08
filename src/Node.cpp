@@ -24,27 +24,25 @@ namespace l3xz::head
 Node::Node()
 : rclcpp::Node("l3xz_head_ctrl")
 , _state{State::Init}
-, _actual_angle
-{
-  {Servo::Pan,  0. * rad},
-  {Servo::Tilt, 0. * rad},
-}
-, _opt_last_servo_pan_msg{std::nullopt}
-, _opt_last_servo_tilt_msg{std::nullopt}
 , _head_qos_profile
 {
   rclcpp::KeepLast(10),
   rmw_qos_profile_sensor_data
 }
-, _target_angle
-{
-  {Servo::Pan,  0. * rad},
-  {Servo::Tilt, 0. * rad},
-}
 , _target_angular_velocity
 {
   {Servo::Pan,  0. * rad/s},
   {Servo::Tilt, 0. * rad/s},
+}
+, _actual_angle
+{
+  {Servo::Pan,  0. * rad},
+  {Servo::Tilt, 0. * rad},
+}
+, _target_angle
+{
+  {Servo::Pan,  0. * rad},
+  {Servo::Tilt, 0. * rad},
 }
 , _target_mode{Mode::PositionControl}
 , _sm(std::make_unique<boost::sml::sm<FsmImpl>>(*this))
@@ -137,7 +135,6 @@ void Node::init_sub()
     "/l3xz/head/pan/angle/actual", 1,
     [this](std_msgs::msg::Float32::SharedPtr const msg)
     {
-      _opt_last_servo_pan_msg = std::chrono::steady_clock::now();
       _actual_angle[Servo::Pan] = static_cast<double>(msg->data) * rad;
     });
 
@@ -145,7 +142,6 @@ void Node::init_sub()
     "/l3xz/head/tilt/angle/actual", 1,
     [this](std_msgs::msg::Float32::SharedPtr const msg)
     {
-      _opt_last_servo_tilt_msg = std::chrono::steady_clock::now();
       _actual_angle[Servo::Tilt] = static_cast<double>(msg->data) * rad;
     });
 }
@@ -195,18 +191,6 @@ Node::State Node::handle_Init()
 {
   bool all_messages_received = true;
   std::stringstream missing_msg_list;
-
-  if (!_opt_last_servo_pan_msg.has_value())
-  {
-    all_messages_received = false;
-    missing_msg_list << "head/pan/angle/actual ";
-  }
-
-  if (!_opt_last_servo_tilt_msg.has_value())
-  {
-    all_messages_received = false;
-    missing_msg_list << "head/tilt/angle/actual ";
-  }
 
   if (!all_messages_received)
   {

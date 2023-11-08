@@ -82,17 +82,16 @@ private:
             _target_angular_velocity.at(Servo::Tilt) < -1. * ACTIVITY_EPSILON.in(rad/s));
   }
 
-  std::map<Servo, quantity<rad>> _actual_angle;
-  std::optional<std::chrono::steady_clock::time_point> _opt_last_servo_pan_msg, _opt_last_servo_tilt_msg;
-
   rclcpp::QoS _head_qos_profile;
   rclcpp::SubscriptionOptions _head_sub_options;
   rclcpp::Subscription<geometry_msgs::msg::Twist>::SharedPtr _head_sub;
+  std::map<Servo, quantity<rad/s>> _target_angular_velocity;
+
+  std::map<Servo, quantity<rad>> _actual_angle;
   rclcpp::Subscription<std_msgs::msg::Float32>::SharedPtr _pan_angle_actual_sub, _tilt_angle_actual_sub;
   void init_sub();
 
   std::map<Servo, quantity<rad>> _target_angle;
-  std::map<Servo, quantity<rad/s>> _target_angular_velocity;
   Mode _target_mode;
   rclcpp::Publisher<std_msgs::msg::Float32>::SharedPtr _pan_angle_pub, _tilt_angle_pub, _pan_angle_vel_pub, _tilt_angle_vel_pub;
   rclcpp::Publisher<ros2_dynamixel_bridge::msg::Mode>::SharedPtr _pan_angle_mode_pub, _tilt_angle_mode_pub;
