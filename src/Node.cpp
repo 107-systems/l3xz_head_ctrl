@@ -24,7 +24,6 @@ namespace l3xz::head
 Node::Node()
 : rclcpp::Node("l3xz_head_ctrl")
 , _state{State::Init}
-, _opt_last_teleop_msg{std::nullopt}
 , _actual_angle
 {
   {Servo::Pan,  0. * rad},
@@ -32,6 +31,11 @@ Node::Node()
 }
 , _opt_last_servo_pan_msg{std::nullopt}
 , _opt_last_servo_tilt_msg{std::nullopt}
+, _head_qos_profile
+{
+  rclcpp::KeepLast(10),
+  rmw_qos_profile_sensor_data
+}
 , _target_angle
 {
   {Servo::Pan,  0. * rad},
@@ -43,7 +47,12 @@ Node::Node()
   {Servo::Tilt, 0. * rad/s},
 }
 , _target_mode{Mode::PositionControl}
+, _sm(std::make_unique<boost::sml::sm<FsmImpl>>(*this))
 {
+  declare_parameter("head_topic", "cmd_vel_head");
+  declare_parameter("head_topic_deadline_ms", 100);
+  declare_parameter("head_topic_liveliness_lease_duration", 1000);
+
   declare_parameter("pan_initial_angle_deg", 180.0f);
   declare_parameter("pan_min_angle_deg", 170.0f);
   declare_parameter("pan_max_angle_deg", 190.0f);
@@ -76,14 +85,53 @@ void Node::init_heartbeat()
 
 void Node::init_sub()
 {
+  auto const head_topic = get_parameter("head_topic").as_string();
+  auto const head_topic_deadline = std::chrono::milliseconds(get_parameter("head_topic_deadline_ms").as_int());
+  auto const head_topic_liveliness_lease_duration = std::chrono::milliseconds(get_parameter("head_topic_liveliness_lease_duration").as_int());
+
+  _head_qos_profile.deadline(head_topic_deadline);
+  _head_qos_profile.liveliness(RMW_QOS_POLICY_LIVELINESS_MANUAL_BY_TOPIC);
+  _head_qos_profile.liveliness_lease_duration(head_topic_liveliness_lease_duration);
+
+  _head_sub_options.event_callbacks.deadline_callback =
+    [this, head_topic](rclcpp::QOSDeadlineRequestedInfo & event) -> void
+    {
+      RCLCPP_ERROR_THROTTLE(get_logger(),
+                            *get_clock(),
+                            5*1000UL,
+                            "deadline missed for \"%s\" (total_count: %d, total_count_change: %d).",
+                            head_topic.c_str(),
+                            event.total_count,
+                            event.total_count_change);
+
+      _target_angular_velocity[Servo::Pan ] = 0. * rad/s;
+      _target_angular_velocity[Servo::Tilt] = 0. * rad/s;
+    };
+
+  _head_sub_options.event_callbacks.liveliness_callback =
+    [this, head_topic](rclcpp::QOSLivelinessChangedInfo & event) -> void
+    {
+      if (event.alive_count > 0)
+      {
+        RCLCPP_INFO(get_logger(), "liveliness gained for \"%s\"", head_topic.c_str());
+        _sm->process_event(head_sub_liveliness_gained{});
+      }
+      else
+      {
+        RCLCPP_WARN(get_logger(), "liveliness lost for \"%s\"", head_topic.c_str());
+        _sm->process_event(head_sub_liveliness_lost{});
+      }
+    };
+
   _head_sub = create_subscription<geometry_msgs::msg::Twist>(
-    "/l3xz/cmd_vel_head", 1,
+    head_topic,
+    _head_qos_profile,
     [this](geometry_msgs::msg::Twist::SharedPtr const msg)
     {
-      _opt_last_teleop_msg = std::chrono::steady_clock::now();
       _target_angular_velocity[Servo::Pan ] = static_cast<double>(msg->angular.z) * rad/s;
       _target_angular_velocity[Servo::Tilt] = static_cast<double>(msg->angular.y) * rad/s;
-    });
+    },
+    _head_sub_options);
 
   _pan_angle_actual_sub = create_subscription<std_msgs::msg::Float32>(
     "/l3xz/head/pan/angle/actual", 1,
@@ -147,12 +195,6 @@ Node::State Node::handle_Init()
 {
   bool all_messages_received = true;
   std::stringstream missing_msg_list;
-
-  if (!_opt_last_teleop_msg.has_value())
-  {
-    all_messages_received = false;
-    missing_msg_list << "cmd_vel_head ";
-  }
 
   if (!_opt_last_servo_pan_msg.has_value())
   {

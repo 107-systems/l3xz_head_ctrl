@@ -11,6 +11,9 @@ def generate_launch_description():
       output='screen',
       emulate_tty=True,
       parameters=[
+        {'head_topic': 'cmd_vel_head'},
+        {'head_topic_deadline_ms': 100},
+        {'head_topic_liveliness_lease_duration': 1000},
         {'pan_initial_angle_deg': 180.0},
         {'pan_min_angle_deg': 180.0 - 25.0},
         {'pan_max_angle_deg': 180.0 + 25.0},
