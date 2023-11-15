@@ -84,6 +84,7 @@ private:
   rclcpp::SubscriptionOptions _head_sub_options;
   rclcpp::Subscription<geometry_msgs::msg::Twist>::SharedPtr _head_sub;
   std::map<Servo, quantity<rad/s>> _target_angular_velocity;
+  void init_head_sub();
 
   std::map<Servo, quantity<rad>> _actual_angle;
   rclcpp::Subscription<std_msgs::msg::Float32>::SharedPtr _pan_angle_actual_sub, _tilt_angle_actual_sub;

@@ -46,10 +46,6 @@ Node::Node()
 }
 , _target_mode{Mode::PositionControl}
 {
-  declare_parameter("head_topic", "cmd_vel_head");
-  declare_parameter("head_topic_deadline_ms", 100);
-  declare_parameter("head_topic_liveliness_lease_duration", 1000);
-
   declare_parameter("pan_initial_angle_deg", 180.0f);
   declare_parameter("pan_min_angle_deg", 170.0f);
   declare_parameter("pan_max_angle_deg", 190.0f);
@@ -59,6 +55,7 @@ Node::Node()
   declare_parameter("tilt_max_angle_deg", 100.0f);
 
   init_heartbeat();
+  init_head_sub();
   init_sub();
   init_pub();
 
@@ -80,8 +77,12 @@ void Node::init_heartbeat()
   _heartbeat_pub = heartbeat::Publisher::create(*this, heartbeat_topic.str());
 }
 
-void Node::init_sub()
+void Node::init_head_sub()
 {
+  declare_parameter("head_topic", "cmd_vel_head");
+  declare_parameter("head_topic_deadline_ms", 100);
+  declare_parameter("head_topic_liveliness_lease_duration", 1000);
+
   auto const head_topic = get_parameter("head_topic").as_string();
   auto const head_topic_deadline = std::chrono::milliseconds(get_parameter("head_topic_deadline_ms").as_int());
   auto const head_topic_liveliness_lease_duration = std::chrono::milliseconds(get_parameter("head_topic_liveliness_lease_duration").as_int());
@@ -115,6 +116,9 @@ void Node::init_sub()
       else
       {
         RCLCPP_WARN(get_logger(), "liveliness lost for \"%s\"", head_topic.c_str());
+
+        _target_angular_velocity[Servo::Pan ] = 0. * rad/s;
+        _target_angular_velocity[Servo::Tilt] = 0. * rad/s;
       }
     };
 
@@ -127,7 +131,10 @@ void Node::init_sub()
       _target_angular_velocity[Servo::Tilt] = static_cast<double>(msg->angular.y) * rad/s;
     },
     _head_sub_options);
+}
 
+void Node::init_sub()
+{
   _pan_angle_actual_sub = create_subscription<std_msgs::msg::Float32>(
     "/l3xz/head/pan/angle/actual", 1,
     [this](std_msgs::msg::Float32::SharedPtr const msg)
