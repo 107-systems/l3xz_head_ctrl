@@ -11,7 +11,7 @@ Head controller for the [L3X-Z](https://github.com/107-systems/l3xz) electric/hy
 </p>
 
 #### How-to-build
-Note: Don't forget to install the [dependencies](https://github.com/107-systems/viper#install-dependencies).
+Note: Don't forget to install the [dependencies](https://github.com/107-systems/l3xz_head_ctrl#install-dependencies).
 ```bash
 cd $COLCON_WS/src
 git clone https://github.com/107-systems/l3xz_head_ctrl
