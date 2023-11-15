@@ -11,38 +11,7 @@ Head controller for the L3X-Z electric/hydraulic hexapod robot.
 </p>
 
 #### How-to-build
-* Install `gsl-lite`
-```bash
-git clone https://github.com/gsl-lite/gsl-lite && cd gsl-lite
-mkdir build && cd build
-cmake .. && make -j8
-sudo make install
-```
-* Install `Catch2`
-```bash
-git clone https://github.com/catchorg/Catch2 && cd Catch2
-mkdir build && cd build
-cmake .. && make -j8
-sudo make install
-```
-* Install `fmt`
-```bash
-git clone https://github.com/fmtlib/fmt && cd fmt
-mkdir build && cd build
-cmake -DFMT_TEST=OFF ..
-make -j8
-sudo make install
-```
-* Install `mp-units`
-```bash
-git clone https://github.com/mpusz/mp-units && cd mp-units
-git checkout v2.0.0
-mkdir build && cd build
-cmake -DMP_UNITS_AS_SYSTEM_HEADERS=ON -DMP_UNITS_BUILD_LA=OFF ..
-make -j8
-sudo make install
-```
-* Build with `colcon`
+Note: Don't forget to install the [dependencies](https://github.com/107-systems/viper#install-dependencies).
 ```bash
 cd $COLCON_WS/src
 git clone https://github.com/107-systems/l3xz_head_ctrl
@@ -86,3 +55,35 @@ ros2 launch l3xz_head_ctrl head_ctrl.py
 | `tilt_servo_initial_angle` |  90.0   | Initial angle of the tilt servo after startup / deg. |
 |   `tilt_servo_min_angle`   |  80.0   | Min. angle of then tilt servo / deg.                 |
 |   `tilt_servo_max_angle`   |  100.0  | Min. angle of then tilt servo / deg.                 |
+
+#### Install dependencies
+* Install `gsl-lite`
+```bash
+git clone https://github.com/gsl-lite/gsl-lite && cd gsl-lite
+mkdir build && cd build
+cmake .. && make -j8
+sudo make install
+```
+* Install `Catch2`
+```bash
+git clone https://github.com/catchorg/Catch2 && cd Catch2
+mkdir build && cd build
+cmake .. && make -j8
+sudo make install
+```
+* Install `fmt`
+```bash
+git clone https://github.com/fmtlib/fmt && cd fmt
+mkdir build && cd build
+cmake -DFMT_TEST=OFF ..
+make -j8
+sudo make install
+```
+* Install `mp-units`
+```bash
+git clone https://github.com/mpusz/mp-units && cd mp-units
+mkdir build && cd build
+cmake -DMP_UNITS_AS_SYSTEM_HEADERS=ON -DMP_UNITS_BUILD_LA=OFF ..
+make -j8
+sudo make install
+```
