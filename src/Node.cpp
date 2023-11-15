@@ -283,17 +283,12 @@ void Node::ctrl_loop()
 
 Node::State Node::handle_Init()
 {
-  bool all_messages_received = true;
-  std::stringstream missing_msg_list;
+  bool const all_sub_topics_alive =
+    _is_head_sub_alive && _is_actual_angle_sub_alive.at(Servo::Pan) && _is_actual_angle_sub_alive.at(Servo::Tilt);
 
-  if (!all_messages_received)
+  if (!all_sub_topics_alive)
   {
-    RCLCPP_WARN_THROTTLE(get_logger(),
-                         *get_clock(),
-                         2000,
-                         "missing messages for topics [ %s]",
-                         missing_msg_list.str().c_str());
-
+    RCLCPP_WARN_THROTTLE(get_logger(), *get_clock(), 2000, "[State::Init] not all subscription topics are alive yet");
     return State::Init;
   }
 
