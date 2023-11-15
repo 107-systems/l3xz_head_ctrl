@@ -4,7 +4,7 @@
 [![Build Status](https://github.com/107-systems/l3xz_head_ctrl/actions/workflows/ros2.yml/badge.svg)](https://github.com/107-systems/l3xz_head_ctrl/actions/workflows/ros2.yml)
 [![Spell Check status](https://github.com/107-systems/l3xz_head_ctrl/actions/workflows/spell-check.yml/badge.svg)](https://github.com/107-systems/l3xz_head_ctrl/actions/workflows/spell-check.yml)
 
-Head controller for the L3X-Z electric/hydraulic hexapod robot.
+Head controller for the [L3X-Z](https://github.com/107-systems/l3xz) electric/hydraulic hexapod robot.
 
 <p align="center">
   <a href="https://github.com/107-systems/l3xz"><img src="https://raw.githubusercontent.com/107-systems/.github/main/logo/l3xz-logo-memento-mori-github.png" width="40%"></a>
