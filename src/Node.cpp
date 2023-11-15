@@ -29,6 +29,7 @@ Node::Node()
   rclcpp::KeepLast(10),
   rmw_qos_profile_sensor_data
 }
+, _is_head_sub_alive{false}
 , _target_angular_velocity
 {
   {Servo::Pan,  0. * rad/s},
@@ -38,6 +39,11 @@ Node::Node()
 {
   {Servo::Pan,  rclcpp::QoS(rclcpp::KeepLast(1), rmw_qos_profile_sensor_data)},
   {Servo::Tilt, rclcpp::QoS(rclcpp::KeepLast(1), rmw_qos_profile_sensor_data)},
+}
+, _is_actual_angle_sub_alive
+{
+  {Servo::Pan,  false},
+  {Servo::Tilt, false},
 }
 , _actual_angle
 {
@@ -117,11 +123,12 @@ void Node::init_head_sub()
       if (event.alive_count > 0)
       {
         RCLCPP_INFO(get_logger(), "liveliness gained for \"%s\"", head_topic.c_str());
+        _is_head_sub_alive = true;
       }
       else
       {
         RCLCPP_WARN(get_logger(), "liveliness lost for \"%s\"", head_topic.c_str());
-
+        _is_head_sub_alive = false;
         _target_angular_velocity[Servo::Pan ] = 0. * rad/s;
         _target_angular_velocity[Servo::Tilt] = 0. * rad/s;
       }
@@ -167,10 +174,12 @@ void Node::init_actual_angle()
         if (event.alive_count > 0)
         {
           RCLCPP_INFO(get_logger(), "liveliness gained for \"%s\"", pan_actual_angle_topic.c_str());
+          _is_actual_angle_sub_alive[Servo::Pan] = true;
         }
         else
         {
           RCLCPP_WARN(get_logger(), "liveliness lost for \"%s\"", pan_actual_angle_topic.c_str());
+          _is_actual_angle_sub_alive[Servo::Pan] = false;
         }
       };
 
@@ -211,10 +220,12 @@ void Node::init_actual_angle()
         if (event.alive_count > 0)
         {
           RCLCPP_INFO(get_logger(), "liveliness gained for \"%s\"", tilt_actual_angle_topic.c_str());
+          _is_actual_angle_sub_alive[Servo::Tilt] = true;
         }
         else
         {
           RCLCPP_WARN(get_logger(), "liveliness lost for \"%s\"", tilt_actual_angle_topic.c_str());
+          _is_actual_angle_sub_alive[Servo::Tilt] = false;
         }
       };
 

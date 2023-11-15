@@ -83,12 +83,14 @@ private:
   rclcpp::QoS _head_qos_profile;
   rclcpp::SubscriptionOptions _head_sub_options;
   rclcpp::Subscription<geometry_msgs::msg::Twist>::SharedPtr _head_sub;
+  bool _is_head_sub_alive;
   std::map<Servo, quantity<rad/s>> _target_angular_velocity;
   void init_head_sub();
 
   std::map<Servo, rclcpp::QoS> _actual_angle_qos_profile;
   std::map<Servo, rclcpp::SubscriptionOptions> _actual_angle_sub_options;
   std::map<Servo, rclcpp::Subscription<std_msgs::msg::Float32>::SharedPtr> _actual_angle_sub;
+  std::map<Servo, bool> _is_actual_angle_sub_alive;
   std::map<Servo, quantity<rad>> _actual_angle;
   void init_actual_angle();
 
