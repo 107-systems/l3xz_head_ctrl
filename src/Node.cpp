@@ -34,6 +34,11 @@ Node::Node()
   {Servo::Pan,  0. * rad/s},
   {Servo::Tilt, 0. * rad/s},
 }
+, _actual_angle_qos_profile
+{
+  {Servo::Pan,  rclcpp::QoS(rclcpp::KeepLast(1), rmw_qos_profile_sensor_data)},
+  {Servo::Tilt, rclcpp::QoS(rclcpp::KeepLast(1), rmw_qos_profile_sensor_data)},
+}
 , _actual_angle
 {
   {Servo::Pan,  0. * rad},
@@ -135,19 +140,93 @@ void Node::init_head_sub()
 
 void Node::init_actual_angle()
 {
-  _actual_angle_sub[Servo::Pan] = create_subscription<std_msgs::msg::Float32>(
-    "/l3xz/head/pan/angle/actual", 1,
-    [this](std_msgs::msg::Float32::SharedPtr const msg)
-    {
-      _actual_angle[Servo::Pan] = static_cast<double>(msg->data) * rad;
-    });
+  {
+    declare_parameter("pan_actual_angle_topic", "head/pan/angle/actual");
+    declare_parameter("pan_actual_angle_topic_deadline_ms", 100);
+    declare_parameter("pan_actual_angle_topic_liveliness_lease_duration", 1000);
 
-  _actual_angle_sub[Servo::Tilt] = create_subscription<std_msgs::msg::Float32>(
-    "/l3xz/head/tilt/angle/actual", 1,
-    [this](std_msgs::msg::Float32::SharedPtr const msg)
-    {
-      _actual_angle[Servo::Tilt] = static_cast<double>(msg->data) * rad;
-    });
+    auto const pan_actual_angle_topic = get_parameter("pan_actual_angle_topic").as_string();
+    auto const pan_actual_angle_topic_deadline = std::chrono::milliseconds(get_parameter("pan_actual_angle_topic_deadline_ms").as_int());
+    auto const pan_actual_angle_topic_liveliness_lease_duration = std::chrono::milliseconds(get_parameter("pan_actual_angle_topic_liveliness_lease_duration").as_int());
+
+    _actual_angle_qos_profile.at(Servo::Pan).deadline(pan_actual_angle_topic_deadline);
+    _actual_angle_qos_profile.at(Servo::Pan).liveliness(RMW_QOS_POLICY_LIVELINESS_MANUAL_BY_TOPIC);
+    _actual_angle_qos_profile.at(Servo::Pan).liveliness_lease_duration(pan_actual_angle_topic_liveliness_lease_duration);
+
+    _actual_angle_sub_options.at(Servo::Pan).event_callbacks.deadline_callback =
+      [this, pan_actual_angle_topic](rclcpp::QOSDeadlineRequestedInfo & event) -> void
+      {
+        RCLCPP_ERROR_THROTTLE(get_logger(), *get_clock(), 5*1000UL,
+                              "deadline missed for \"%s\" (total_count: %d, total_count_change: %d).",
+                              pan_actual_angle_topic.c_str(), event.total_count, event.total_count_change);
+      };
+
+    _actual_angle_sub_options.at(Servo::Pan).event_callbacks.liveliness_callback =
+      [this, pan_actual_angle_topic](rclcpp::QOSLivelinessChangedInfo & event) -> void
+      {
+        if (event.alive_count > 0)
+        {
+          RCLCPP_INFO(get_logger(), "liveliness gained for \"%s\"", pan_actual_angle_topic.c_str());
+        }
+        else
+        {
+          RCLCPP_WARN(get_logger(), "liveliness lost for \"%s\"", pan_actual_angle_topic.c_str());
+        }
+      };
+
+    _actual_angle_sub[Servo::Pan] = create_subscription<std_msgs::msg::Float32>(
+      pan_actual_angle_topic,
+      _actual_angle_qos_profile.at(Servo::Pan),
+      [this](std_msgs::msg::Float32::SharedPtr const msg)
+      {
+        _actual_angle[Servo::Pan] = static_cast<double>(msg->data) * rad;
+      },
+      _actual_angle_sub_options.at(Servo::Pan));
+  }
+
+  {
+    declare_parameter("tilt_actual_angle_topic", "head/tilt/angle/actual");
+    declare_parameter("tilt_actual_angle_topic_deadline_ms", 100);
+    declare_parameter("tilt_actual_angle_topic_liveliness_lease_duration", 1000);
+
+    auto const tilt_actual_angle_topic = get_parameter("tilt_actual_angle_topic").as_string();
+    auto const tilt_actual_angle_topic_deadline = std::chrono::milliseconds(get_parameter("tilt_actual_angle_topic_deadline_ms").as_int());
+    auto const tilt_actual_angle_topic_liveliness_lease_duration = std::chrono::milliseconds(get_parameter("tilt_actual_angle_topic_liveliness_lease_duration").as_int());
+
+    _actual_angle_qos_profile.at(Servo::Tilt).deadline(tilt_actual_angle_topic_deadline);
+    _actual_angle_qos_profile.at(Servo::Tilt).liveliness(RMW_QOS_POLICY_LIVELINESS_MANUAL_BY_TOPIC);
+    _actual_angle_qos_profile.at(Servo::Tilt).liveliness_lease_duration(tilt_actual_angle_topic_liveliness_lease_duration);
+
+    _actual_angle_sub_options.at(Servo::Tilt).event_callbacks.deadline_callback =
+      [this, tilt_actual_angle_topic](rclcpp::QOSDeadlineRequestedInfo & event) -> void
+      {
+        RCLCPP_ERROR_THROTTLE(get_logger(), *get_clock(), 5*1000UL,
+                              "deadline missed for \"%s\" (total_count: %d, total_count_change: %d).",
+                              tilt_actual_angle_topic.c_str(), event.total_count, event.total_count_change);
+      };
+
+    _actual_angle_sub_options.at(Servo::Tilt).event_callbacks.liveliness_callback =
+      [this, tilt_actual_angle_topic](rclcpp::QOSLivelinessChangedInfo & event) -> void
+      {
+        if (event.alive_count > 0)
+        {
+          RCLCPP_INFO(get_logger(), "liveliness gained for \"%s\"", tilt_actual_angle_topic.c_str());
+        }
+        else
+        {
+          RCLCPP_WARN(get_logger(), "liveliness lost for \"%s\"", tilt_actual_angle_topic.c_str());
+        }
+      };
+
+    _actual_angle_sub[Servo::Tilt] = create_subscription<std_msgs::msg::Float32>(
+      tilt_actual_angle_topic,
+      _actual_angle_qos_profile.at(Servo::Tilt),
+      [this](std_msgs::msg::Float32::SharedPtr const msg)
+      {
+        _actual_angle[Servo::Tilt] = static_cast<double>(msg->data) * rad;
+      },
+      _actual_angle_sub_options.at(Servo::Tilt));
+  }
 }
 
 void Node::init_pub()
