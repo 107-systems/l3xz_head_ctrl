@@ -86,9 +86,9 @@ private:
   std::map<Servo, quantity<rad/s>> _target_angular_velocity;
   void init_head_sub();
 
+  std::map<Servo, rclcpp::Subscription<std_msgs::msg::Float32>::SharedPtr> _actual_angle_sub;
   std::map<Servo, quantity<rad>> _actual_angle;
-  rclcpp::Subscription<std_msgs::msg::Float32>::SharedPtr _pan_angle_actual_sub, _tilt_angle_actual_sub;
-  void init_sub();
+  void init_actual_angle();
 
   std::map<Servo, quantity<rad>> _target_angle;
   Mode _target_mode;

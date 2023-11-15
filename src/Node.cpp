@@ -56,7 +56,7 @@ Node::Node()
 
   init_heartbeat();
   init_head_sub();
-  init_sub();
+  init_actual_angle();
   init_pub();
 
   _ctrl_loop_rate_monitor = loop_rate::Monitor::create(CTRL_LOOP_RATE, std::chrono::milliseconds(1));
@@ -133,16 +133,16 @@ void Node::init_head_sub()
     _head_sub_options);
 }
 
-void Node::init_sub()
+void Node::init_actual_angle()
 {
-  _pan_angle_actual_sub = create_subscription<std_msgs::msg::Float32>(
+  _actual_angle_sub[Servo::Pan] = create_subscription<std_msgs::msg::Float32>(
     "/l3xz/head/pan/angle/actual", 1,
     [this](std_msgs::msg::Float32::SharedPtr const msg)
     {
       _actual_angle[Servo::Pan] = static_cast<double>(msg->data) * rad;
     });
 
-  _tilt_angle_actual_sub = create_subscription<std_msgs::msg::Float32>(
+  _actual_angle_sub[Servo::Tilt] = create_subscription<std_msgs::msg::Float32>(
     "/l3xz/head/tilt/angle/actual", 1,
     [this](std_msgs::msg::Float32::SharedPtr const msg)
     {
