@@ -45,7 +45,6 @@ Node::Node()
   {Servo::Tilt, 0. * rad},
 }
 , _target_mode{Mode::PositionControl}
-, _sm(std::make_unique<boost::sml::sm<FsmImpl>>(*this))
 {
   declare_parameter("head_topic", "cmd_vel_head");
   declare_parameter("head_topic_deadline_ms", 100);
@@ -112,12 +111,10 @@ void Node::init_sub()
       if (event.alive_count > 0)
       {
         RCLCPP_INFO(get_logger(), "liveliness gained for \"%s\"", head_topic.c_str());
-        _sm->process_event(head_sub_liveliness_gained{});
       }
       else
       {
         RCLCPP_WARN(get_logger(), "liveliness lost for \"%s\"", head_topic.c_str());
-        _sm->process_event(head_sub_liveliness_lost{});
       }
     };
 

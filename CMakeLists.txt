@@ -15,7 +15,6 @@ find_package(mp-units REQUIRED)
 #######################################################################################
 include_directories(${L3XZ_HEAD_CTRL_TARGET}
   include
-  external/sml/current
 )
 #######################################################################################
 add_executable(${L3XZ_HEAD_CTRL_TARGET}

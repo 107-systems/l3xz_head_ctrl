@@ -15,8 +15,6 @@
 #include <chrono>
 #include <memory>
 
-#include <boost/sml.hpp>
-
 #include <rclcpp/rclcpp.hpp>
 
 #include <std_msgs/msg/float32.hpp>
@@ -115,25 +113,6 @@ private:
   static void publish_Angle               (rclcpp::Publisher<std_msgs::msg::Float32>::SharedPtr const pub, quantity<rad> const angle);
   static void publish_mode_PositionControl(rclcpp::Publisher<ros2_dynamixel_bridge::msg::Mode>::SharedPtr const pub);
   static void publish_mode_VelocityControl(rclcpp::Publisher<ros2_dynamixel_bridge::msg::Mode>::SharedPtr const pub);
-
-  struct head_sub_liveliness_gained { };
-  struct head_sub_liveliness_lost { };
-
-  struct FsmImpl {
-    auto operator()() const noexcept {
-      using namespace boost::sml;
-      return make_transition_table(
-        *"standby"_s + event<head_sub_liveliness_gained> /
-          [](Node & /* node */) { }
-          = "active"_s
-        ,"active"_s + event<head_sub_liveliness_lost> /
-          [](Node & /* node */) { }
-          = "standby"_s
-      );
-    }
-  };
-
-  std::unique_ptr<boost::sml::sm<FsmImpl>> _sm;
 };
 
 /**************************************************************************************
